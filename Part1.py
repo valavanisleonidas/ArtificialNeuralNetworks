@@ -29,11 +29,10 @@ def create_linearly_separable_data():
 
 
 [X, Y] = create_linearly_separable_data()
-idx1 = np.where(Y == 0)
-idx2 = np.where(Y == 1)
-print(len(idx1))
 
-print(len(idx2))
+idx1 = np.where(Y == 0)[0]
+idx2 = np.where(Y == 1)[0]
+
 plt.scatter(X[idx1,0], X[idx1,1])
 plt.scatter(X[idx2,0], X[idx2,1])
 
