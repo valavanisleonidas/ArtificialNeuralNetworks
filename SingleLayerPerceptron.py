@@ -1,6 +1,6 @@
 import numpy as np
 
-
+class perceptron:
 def __init__(self, inputs, targets):
     if np.ndim(inputs) > 1:
         self.nIn = np.shape(inputs)[1]
