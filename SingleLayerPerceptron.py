@@ -27,4 +27,4 @@ def train(self, inputs, targets, eta, iterations):
 
 def recall(self, inputs):
     activations = np.dot(inputs, self.weights)
-    return np.where(activations > 0, 1, 0)
+    return np.where(activations > 0, 1, -1)

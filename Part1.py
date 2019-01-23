@@ -6,6 +6,17 @@ from sklearn.model_selection import train_test_split
 np.random.seed(0)
 
 
+def to_One_Hot(labels):
+    """ Make your Labels one hot encoded (mnist labelling)
+        Emulates the functionality of tf.keras.utils.to_categorical( y )
+    """
+    hotEncoding = np.zeros([len(labels),
+                            np.max(labels) + 1])
+    hotEncoding[np.arange(len(hotEncoding)), labels] = 1
+
+    return hotEncoding
+
+
 def create_linearly_separable_data():
     meanA = [2, 1.5]
     meanB = [-2.5, -2.5]
@@ -16,7 +27,7 @@ def create_linearly_separable_data():
     n = 100
 
     classA = np.random.multivariate_normal(meanA, sigmaA, n)
-    labelsA = np.zeros((classA.shape[0], 1))
+    labelsA = -np.ones((classA.shape[0], 1))
     classB = np.random.multivariate_normal(meanB, sigmaB, n)
     labelsB = np.ones((classB.shape[0], 1))
 
@@ -28,13 +39,39 @@ def create_linearly_separable_data():
     return [X, Y]
 
 
+class perceptron(object):
+    def __init__(self, learning_rate, X, target):
+        self.X = X
+        self.t = target
+        self.w = np.zeros(len(self.X[0]) + 1)
+        self.w[0] = -1  # Bias
+        self.learning_rate = learning_rate
+
+    def predict(self, row):
+        threshold = self.w[0]
+        for i in range(len(row)):
+            threshold += self.w[i + 1] * row[i]
+        return 1.0 if threshold >= 0.0 else -1.0
+
+    def train_weights(self, n_epochs):
+        for epoch in range(n_epochs):
+            for idx, row in enumerate(self.X):
+                pred = self.predict(row)
+                error = self.t[idx] - pred
+                self.w[0] += learning_rate * error
+                for x_input in row:
+                    self.w += learning_rate * error * x_input
+
+
 [X, Y] = create_linearly_separable_data()
 
-idx1 = np.where(Y == 0)[0]
+idx1 = np.where(Y == -1)[0]
 idx2 = np.where(Y == 1)[0]
 
-plt.scatter(X[idx1,0], X[idx1,1])
-plt.scatter(X[idx2,0], X[idx2,1])
+plt.scatter(X[idx1, 0], X[idx1, 1])
+plt.scatter(X[idx2, 0], X[idx2, 1])
 
-plt.axis('equal')
-plt.show()
+learning_rate = 0.001
+
+perc = perceptron(learning_rate, X, Y)
+r = perc.train_weights(1)
