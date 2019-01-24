@@ -39,6 +39,30 @@ def create_linearly_separable_data():
     return [X, Y]
 
 
+def plot_data(inputs, targets, weights):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1])
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1])
+
+    plt.plot(np.linspace(-6, 6),
+             -np.linspace(-6, 6) * (weights[0] / weights[1]) - (weights[2] / weights[1]))
+
+    # for i in np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1])):
+    #     slope = -(weights[0] / weights[2]) / (weights[0] / weights[1])
+    #     intercept = -weights[0] / weights[2]
+    #
+    #     # y =mx+c, m is slope and c is intercept
+    #     y = (slope * i) + intercept
+    #     plt.plot(i, y, 'ko')
+
+    plt.show()
+
 class perceptron(object):
         def __init__(self, X, target, learning_rate, activation_method, batch_train=True):
             if batch_train is True:
@@ -68,26 +92,7 @@ class perceptron(object):
                 self.learning_rate = learning_rate
                 self.activation_method = activation_method
 
-        def _plot_data_Sequential(self):
-            # fig config
-            plt.figure()
-            plt.grid(True)
 
-            idx1 = np.where(self.t == -1)[0]
-            idx2 = np.where(self.t == 1)[0]
-
-            plt.scatter(X[idx1, 0], X[idx1, 1])
-            plt.scatter(X[idx2, 0], X[idx2, 1])
-
-            # Here i am calculating slope and intercept with given three weights
-            for i in np.linspace(np.amin(self.X[:, :1]), np.amax(self.X[:, :1])):
-                slope = -(self.w[0] / self.w[2]) / (self.w[0] / self.w[1])
-                intercept = -self.w[0] / self.w[2]
-
-                # y =mx+c, m is slope and c is intercept
-                y = (slope * i) + intercept
-                plt.plot(i, y, 'ko')
-            plt.show()
 
         def activation_function_Sequential(self, threshold):
             if self.activation_method is 'binary':
@@ -125,7 +130,7 @@ class perceptron(object):
 
                 err = np.mean(error)
                 print(err)
-            self._plot_data_Sequential()
+            plot_data(self.X, self.t, self.w)
 
             return self.w
 
@@ -139,7 +144,8 @@ class perceptron(object):
                 error = self.targets - self.predictions
                 err = np.mean(error)
                 print(err)
-            self._plot_data_Batch()
+            plot_data(self.X, self.targets, self.weights)
+
             return self.weights
 
         def activation_function_Batch(self, thresholds):
@@ -155,7 +161,7 @@ class perceptron(object):
 
 [X, Y] = create_linearly_separable_data()
 
-learning_rate = 0.01
+learning_rate = 0.001
 n_epochs = 40
 
 seq = perceptron(X, Y, learning_rate, activation_method='binary',batch_train=False)
