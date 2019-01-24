@@ -56,6 +56,16 @@ def plot_initial_data(inputs, targets):
     plt.show()
 
 
+def plot_error(error, num_epochs):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    epochs = np.arange(0, num_epochs, 1)
+    plt.plot(epochs, error, 'r')
+    plt.show()
+
+
 def plot_data(inputs, targets, weights, title):
     # fig config
     plt.figure()
@@ -91,13 +101,16 @@ def plot_data(inputs, targets, weights, title):
 
 
 class perceptron(object):
-    def __init__(self, X, target, learning_rate=0.001, activation_method='binary', batch_train=True):
+    def __init__(self, X, target, n_epochs=20, learning_rate=0.001, activation_method='binary', batch_train=True):
 
         self.activation_method = activation_method
         self.targets = target
         self.learning_rate = learning_rate
         self.X = X
         self.predictions = np.zeros(len(X))
+        self.errors = np.zeros(n_epochs)
+        self.n_epochs = n_epochs
+        self.batch_train = batch_train
 
         if np.ndim(X) > 1:
             self.nIn = np.shape(X)[1]
@@ -109,9 +122,11 @@ class perceptron(object):
         elif np.ndim(X) == 1 or batch_train is False:
             self.nOut = 1
 
-        self.weights = np.random.rand(self.nIn + 1, self.nOut) * 0.1 - 0.05
-        self.weights = np.zeros((self.nIn + 1, self.nOut))
-        self.weights[-1] = -1
+        self.weights = np.random.randn(self.nIn + 1, self.nOut) * 0.1 - 0.05
+        # self.weights = np.zeros((self.nIn + 1, self.nOut))
+        # self.weights[-1] = -1
+        self.weights[-2] = -1
+
         # add bias
         self.X = np.concatenate((X, np.ones((np.shape(X)[0], 1))), axis=1)
 
@@ -129,40 +144,45 @@ class perceptron(object):
 
         return predictions
 
+    def train(self):
+        if self.batch_train:
+            self._train_weights_Batch()
+        else:
+            self._train_weights_Sequential()
+        return self.weights
 
-    def train_weights_Sequential(self, n_epochs):
-        for epoch in range(n_epochs):
-            error = np.zeros(len(self.X))
+    def _train_weights_Sequential(self):
+        for epoch in range(self.n_epochs):
+            errors = np.zeros(len(X))
             for idx, row in enumerate(self.X):
 
                 self.predictions[idx] = self.predict(row)
 
-                error[idx] = self.targets[idx] - self.predictions[idx]
+                errors[idx] = self.targets[idx] - self.predictions[idx]
 
-                row_update = self.learning_rate * np.dot(row, error[idx])
+                row_update = self.learning_rate * np.dot(row, errors[idx])
                 # convert to (length,1)
                 self.weights += np.reshape(row_update, (len(self.weights), 1))
 
-            err = np.mean(error)
+            self.errors[epoch] = np.mean(errors)
             # print(err)
-            plot_data(self.X, self.predictions, self.weights, 'Sequential Perceptron')
+            # plot_data(self.X, self.targets, self.weights, 'Sequential Perceptron')
+        plot_error(self.errors, self.n_epochs)
 
-        return self.weights
+    def _train_weights_Batch(self):
 
-    def train_weights_Batch(self, n_epochs=10):
-
-        for i in range(n_epochs):
+        for i in range(self.n_epochs):
             self.predictions = self.predict()
 
-            error = self.targets - self.predictions
+            errors = self.targets - self.predictions
 
-            self.weights += self.learning_rate * np.dot(np.transpose(self.X), error)
+            self.weights += self.learning_rate * np.dot(np.transpose(self.X), errors)
 
-            err = np.mean(error)
-            print(err)
-            plot_data(self.X, self.predictions, self.weights, 'Batch Perceptron')
+            self.errors[i] = np.mean(errors)
+            # print(err)
+            plot_data(self.X, self.targets, self.weights, 'Batch Perceptron')
 
-        return self.weights
+        plot_error(self.errors, self.n_epochs)
 
 
 [X, Y] = create_linearly_separable_data()
@@ -170,12 +190,10 @@ class perceptron(object):
 # plot_initial_data(X, Y)
 
 learning_rate = 0.001
-n_epochs = 50
+n_epochs = 10
 
-seq = perceptron(X, Y, learning_rate, activation_method='binary', batch_train=False)
+seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary', batch_train=False)
+weights = seq.train()
 
-weights = seq.train_weights_Sequential(n_epochs=n_epochs)
-
-batch = perceptron(X, Y, learning_rate, activation_method='binary', batch_train=True)
-
-weights = batch.train_weights_Batch(n_epochs=n_epochs)
+batch = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary', batch_train=True)
+weights = batch.train()
