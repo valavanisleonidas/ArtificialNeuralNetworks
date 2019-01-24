@@ -39,7 +39,7 @@ def create_linearly_separable_data():
     return [X, Y]
 
 
-def plot_data(inputs, targets, weights):
+def plot_initial_data(inputs, targets):
     # fig config
     plt.figure()
     plt.grid(True)
@@ -47,128 +47,138 @@ def plot_data(inputs, targets, weights):
     idx1 = np.where(targets == -1)[0]
     idx2 = np.where(targets == 1)[0]
 
-    plt.scatter(inputs[idx1, 0], inputs[idx1, 1])
-    plt.scatter(inputs[idx2, 0], inputs[idx2, 1])
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=15)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=15)
+
+    plt.ylim(-10, 10)
+    plt.xlim(-6, 6)
+
+    plt.show()
+
+def plot_data(inputs, targets, weights, title):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s= 15)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s= 15)
+
+    plt.title(title)
 
     plt.plot(np.linspace(-6, 6),
              -np.linspace(-6, 6) * (weights[0] / weights[1]) - (weights[2] / weights[1]))
 
-    # for i in np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1])):
-    #     slope = -(weights[0] / weights[2]) / (weights[0] / weights[1])
-    #     intercept = -weights[0] / weights[2]
-    #
-    #     # y =mx+c, m is slope and c is intercept
-    #     y = (slope * i) + intercept
-    #     plt.plot(i, y, 'ko')
+    plt.ylim(-10, 10)
+    plt.xlim(-6, 6)
+
+    xx = np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1]))
+    slope = -(weights[0] / weights[2]) / (weights[0] / weights[1])
+    intercept = -weights[0] / weights[2]
+
+    # y =mx+c, m is slope and c is intercept
+    y = (slope * xx) + intercept
+
+    # plt.plot(xx, y, 'r')
 
     plt.show()
 
+
 class perceptron(object):
-        def __init__(self, X, target, learning_rate, activation_method, batch_train=True):
-            if batch_train is True:
-                if np.ndim(X) > 1:
-                    self.nIn = np.shape(X)[1]
-                else:
-                    self.nIn = 1
+    def __init__(self, X, target, learning_rate = 0.001, activation_method = 'binary' , batch_train=True):
 
-                if np.ndim(target) > 1:
-                    self.nOut = np.shape(target)[1]
-                else:
-                    self.nOut = 1
+        self.activation_method = activation_method
+        self.targets = target
+        self.learning_rate = learning_rate
+        self.X = X
+        self.predictions = np.zeros(len(X))
 
-                self.activation_method = activation_method
-                self.nData = np.shape(X)[0]
-
-                self.weights = np.random.rand(self.nIn + 1, self.nOut) * 0.1 - 0.05
-                # add bias
-                self.X = np.concatenate((X, np.ones((self.nData, 1))), axis=1)
-                self.targets = target
-                self.learning_rate = learning_rate
+        if batch_train is True:
+            if np.ndim(X) > 1:
+                self.nIn = np.shape(X)[1]
             else:
-                self.X = X
-                self.t = target
-                self.w = np.zeros(len(self.X[0]) + 1)
-                self.w[0] = -1  # Bias
-                self.learning_rate = learning_rate
-                self.activation_method = activation_method
+                self.nIn = 1
 
+            if np.ndim(target) > 1:
+                self.nOut = np.shape(target)[1]
+            else:
+                self.nOut = 1
 
+            self.nData = np.shape(X)[0]
 
-        def activation_function_Sequential(self, threshold):
-            if self.activation_method is 'binary':
-                return 1.0 if threshold >= 0.0 else -1.0
+            self.weights = np.random.rand(self.nIn + 1, self.nOut) * 0.1 - 0.05
+            # add bias
+            self.X = np.concatenate((X, np.ones((self.nData, 1))), axis=1)
+        else:
 
-        def predict_Sequential(self, row):
+            self.w = np.zeros(len(self.X[0]) + 1)
+            self.w[0] = -1  # Bias
 
-            threshold = self.w[0]
-            for i in range(len(row)):
-                threshold += (self.w[i] * row[i])
-            prediction = self.activation_function_Sequential(threshold)
-            return prediction
+    def activation_function_Sequential(self, threshold):
+        if self.activation_method is 'binary':
+            return 1.0 if threshold >= 0.0 else -1.0
 
-        def _plot_data_Batch(self):
-            plt.clf()
+    def predict_Sequential(self, row):
 
-            idx1 = np.where(self.targets == -1)[0]
-            idx2 = np.where(self.targets == 1)[0]
+        threshold = self.w[0]
+        for i in range(len(row)):
+            threshold += (self.w[i] * row[i])
+        prediction = self.activation_function_Sequential(threshold)
+        return prediction
 
-            plt.scatter(self.X[idx1, 0], self.X[idx1, 1])
-            plt.scatter(self.X[idx2, 0], self.X[idx2, 1])
+    def train_weights_Sequential(self, n_epochs):
+        for epoch in range(n_epochs):
+            error = np.zeros(len(self.X))
+            for idx, row in enumerate(self.X):
+                self.predictions[idx] = self.predict_Sequential(row)
+                error[idx] = self.targets[idx] - self.predictions[idx]
+                for x_input in row:
+                    self.w += learning_rate * error[idx] * x_input
 
-            plt.plot(np.linspace(-6, 6), -np.linspace(-6, 6) * (self.weights[0] / self.weights[1]) - (self.weights[2] / self.weights[1]))
-            plt.axis('equal')
+            err = np.mean(error)
+            # print(err)
+        plot_data(self.X, self.predictions, self.w, 'Sequential Perceptron')
 
-            plt.show()
-        def train_weights_Sequential(self, n_epochs):
-            for epoch in range(n_epochs):
-                error = np.zeros(len(self.X))
-                for idx, row in enumerate(self.X):
-                    pred = self.predict_Sequential(row)
-                    error[idx] = self.t[idx] - pred
-                    for x_input in row:
-                        self.w += learning_rate * error[idx] * x_input
+        return self.w
 
-                err = np.mean(error)
-                print(err)
-            plot_data(self.X, self.t, self.w)
+    def train_weights_Batch(self, n_epochs=10):
 
-            return self.w
+        for i in range(n_epochs):
+            self.predictions = self.predict_Batch()
 
-        def train_weights_Batch(self, n_epochs=10):
+            self.weights += self.learning_rate * np.dot(np.transpose(self.X), self.targets - self.predictions)
 
-            for i in range(n_epochs):
-                self.predictions = self.predict_Batch()
+            error = self.targets - self.predictions
+            err = np.mean(error)
+            print(err)
+        plot_data(self.X, self.predictions, self.weights, 'Batch Perceptron')
 
-                self.weights += self.learning_rate * np.dot(np.transpose(self.X), self.targets - self.predictions)
+        return self.weights
 
-                error = self.targets - self.predictions
-                err = np.mean(error)
-                print(err)
-            plot_data(self.X, self.targets, self.weights)
+    def activation_function_Batch(self, thresholds):
+        if self.activation_method is 'binary':
+            return np.where(thresholds > 0, 1, -1)
 
-            return self.weights
+    def predict_Batch(self):
+        thresholds = np.dot(self.X, self.weights)
+        predictions = self.activation_function_Batch(thresholds)
 
-        def activation_function_Batch(self, thresholds):
-            if self.activation_method is 'binary':
-                return np.where(thresholds > 0, 1, -1)
-
-        def predict_Batch(self):
-            thresholds = np.dot(self.X, self.weights)
-            predictions = self.activation_function_Batch(thresholds)
-
-            return predictions
+        return predictions
 
 
 [X, Y] = create_linearly_separable_data()
 
-learning_rate = 0.001
-n_epochs = 40
+# plot_initial_data(X, Y)
 
-seq = perceptron(X, Y, learning_rate, activation_method='binary',batch_train=False)
+learning_rate = 0.001
+n_epochs = 50
+
+seq = perceptron(X, Y, learning_rate, activation_method='binary', batch_train=False)
 
 weights = seq.train_weights_Sequential(n_epochs=n_epochs)
 
-batch = perceptron(X, Y, learning_rate, activation_method='binary',batch_train=True)
+batch = perceptron(X, Y, learning_rate, activation_method='binary', batch_train=True)
 
 weights = batch.train_weights_Batch(n_epochs=n_epochs)
-
