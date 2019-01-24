@@ -123,7 +123,7 @@ def plot_data(inputs, targets, weights, title):
     # ys = [-weights[2] / weights[1], 0]
     #
     # plt.plot(xs, ys, 'b')
-
+    # plt.savefig(title + '.png')
     plt.pause(interval=.1)
 
 
@@ -197,8 +197,8 @@ class perceptron(object):
                 self.weights += np.reshape(row_update, (len(self.weights), 1))
 
             self.errors[epoch] = np.mean(errors)
-            # print(err)
-            plot_data(self.X, self.targets, self.weights, 'Sequential Perceptron')
+            print('{0} {1} {2}'.format("Sequential", epoch, self.errors[epoch]))
+            plot_data(self.X, self.targets, self.weights, 'Sequential Perceptron ' + str(epoch))
 
     def _train_weights_Batch(self):
 
@@ -210,8 +210,8 @@ class perceptron(object):
             self.weights += self.learning_rate * np.dot(np.transpose(self.X), errors)
 
             self.errors[i] = np.mean(errors)
-            # print(err)
-            plot_data(self.X, self.targets, self.weights, 'Batch Perceptron')
+            print('{0} {1} {2}'.format("Batch", i, self.errors[i]))
+            plot_data(self.X, self.targets, self.weights, 'Batch Perceptron ' + str(i))
 
 
 
