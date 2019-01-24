@@ -33,7 +33,27 @@ def create_linearly_separable_data():
     X = np.concatenate((classA, classB), axis=0)
     Y = np.concatenate((labelsA, labelsB))
 
-    X, Y = shuffle(X, Y)
+    # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    return [X, Y]
+
+def create_non_linearly_separable_data():
+    meanA = [1.0, 0.3]
+    meanB = [0.0, -0.1]
+
+    sigmaA = [[1, 0], [0, 0.2]]
+    sigmaB = [[-1, 0], [0, 0.3]]
+
+    ndata = 200
+
+    classA = np.random.multivariate_normal(meanA, sigmaA, ndata)
+    labelsA = np.zeros((classA.shape[0], 1))
+    classB = np.random.multivariate_normal(meanB, sigmaB, ndata)
+    labelsB = np.ones((classB.shape[0], 1))
+
+
+    X = np.concatenate((classA, classB), axis=0)
+    Y = np.concatenate((labelsA, labelsB))
+
     # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
     return [X, Y]
 
@@ -152,15 +172,20 @@ class perceptron(object):
         return predictions
 
     def train(self):
+        self.X, self.targets = shuffle(self.X, self.targets)
+
         if self.batch_train:
             self._train_weights_Batch()
         else:
             self._train_weights_Sequential()
+
         return [self.weights, self.errors]
 
     def _train_weights_Sequential(self):
         for epoch in range(self.n_epochs):
-            errors = np.zeros(len(X))
+            errors = np.zeros(len(self.X))
+            self.X, self.targets = shuffle(self.X, self.targets)
+
             for idx, row in enumerate(self.X):
 
                 self.predictions[idx] = self.predict(row)
@@ -192,7 +217,7 @@ class perceptron(object):
 
 [X, Y] = create_linearly_separable_data()
 
-plot_initial_data(X, Y)
+# plot_initial_data(X, Y)
 
 learning_rate = 0.001
 n_epochs = 50
