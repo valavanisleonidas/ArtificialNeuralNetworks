@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
-
 np.random.seed(0)
 
 
@@ -56,13 +55,21 @@ def plot_initial_data(inputs, targets):
     plt.show()
 
 
-def plot_error(error, num_epochs):
+def plot_error(error_seq, error_batch, num_epochs):
     # fig config
     plt.figure()
     plt.grid(True)
 
+    plt.ylim(0, 1)
+    plt.xlim(0, num_epochs)
+
     epochs = np.arange(0, num_epochs, 1)
-    plt.plot(epochs, error, 'r')
+
+    plt.plot(epochs, error_seq)
+    plt.plot(epochs, error_batch)
+
+    plt.legend(['sequential error', 'batch error'], loc='upper right')
+
     plt.show()
 
 
@@ -74,8 +81,8 @@ def plot_data(inputs, targets, weights, title):
     idx1 = np.where(targets == -1)[0]
     idx2 = np.where(targets == 1)[0]
 
-    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=15)
-    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=15)
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=10)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=10)
 
     plt.title(title)
 
@@ -122,10 +129,10 @@ class perceptron(object):
         elif np.ndim(X) == 1 or batch_train is False:
             self.nOut = 1
 
-        self.weights = np.random.randn(self.nIn + 1, self.nOut) * 0.1 - 0.05
+        self.weights = np.random.randn(self.nIn + 1, self.nOut)
         # self.weights = np.zeros((self.nIn + 1, self.nOut))
-        # self.weights[-1] = -1
-        self.weights[-2] = -1
+        self.weights[-2] *= -1
+        self.weights[-1] = -1
 
         # add bias
         self.X = np.concatenate((X, np.ones((np.shape(X)[0], 1))), axis=1)
@@ -149,7 +156,7 @@ class perceptron(object):
             self._train_weights_Batch()
         else:
             self._train_weights_Sequential()
-        return self.weights
+        return [self.weights, self.errors]
 
     def _train_weights_Sequential(self):
         for epoch in range(self.n_epochs):
@@ -166,8 +173,7 @@ class perceptron(object):
 
             self.errors[epoch] = np.mean(errors)
             # print(err)
-            # plot_data(self.X, self.targets, self.weights, 'Sequential Perceptron')
-        plot_error(self.errors, self.n_epochs)
+            plot_data(self.X, self.targets, self.weights, 'Sequential Perceptron')
 
     def _train_weights_Batch(self):
 
@@ -182,18 +188,19 @@ class perceptron(object):
             # print(err)
             plot_data(self.X, self.targets, self.weights, 'Batch Perceptron')
 
-        plot_error(self.errors, self.n_epochs)
 
 
 [X, Y] = create_linearly_separable_data()
 
-# plot_initial_data(X, Y)
+plot_initial_data(X, Y)
 
 learning_rate = 0.001
-n_epochs = 10
+n_epochs = 50
 
 seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary', batch_train=False)
-weights = seq.train()
+[weights,error_seq] = seq.train()
 
 batch = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary', batch_train=True)
-weights = batch.train()
+[weights, error_batch] = batch.train()
+
+plot_error(error_seq, error_batch, n_epochs)
