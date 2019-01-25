@@ -1,19 +1,22 @@
+from sklearn.utils import shuffle
+
 import numpy as np
 import math
 
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, zero_one_loss
-import matplotlib.pyplot as plt
-from sklearn.utils import shuffle
+
+import Utils
 
 np.random.seed(0)
 
 
 class MLP:
     def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20, learning_rate=0.01, alpha=0.9,
-                 num_hidden_nodes_layer_1=5, num_output_layers=1, batch_train=True):
+                 num_nodes_hidden_layer=5, num_output_layers=1, batch_train=True, verbose=False):
 
-        self.inputs = inputs
+        self.verbose = verbose
+
+        self.original_inputs = inputs
         self.inputs_labels = inputs_labels
 
         self.input_validation = input_validation
@@ -23,15 +26,15 @@ class MLP:
         self.num_iterations = num_iterations
         self.learning_rate = learning_rate
 
-        self.num_inputs = np.shape(self.inputs)[0]
-        self.num_hidden_nodes_layer_1 = num_hidden_nodes_layer_1
+        self.num_inputs = np.shape(inputs)[0]
+        self.num_hidden_nodes_layer_1 = num_nodes_hidden_layer
         self.num_output_layers = num_output_layers
         self.batch_train = batch_train
 
-        self.X_train_with_bias = np.vstack((self.inputs, np.ones(self.inputs.shape[1])))
+        self.inputs_with_bias = np.vstack((inputs, np.ones(inputs.shape[1])))
 
         if input_validation_labels is not None:
-            self.X_test_with_bias = np.vstack((self.input_validation, np.ones(self.input_validation.shape[1])))
+            self.input_validation_with_bias = np.vstack((self.input_validation, np.ones(self.input_validation.shape[1])))
 
         self.mse = np.zeros((num_iterations))
 
@@ -62,25 +65,27 @@ class MLP:
         delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-            h_out, o_out = self.forward_pass(self.X_train_with_bias, weights_layer_1, weights_layer_2)
+            h_out, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
 
             delta_h, delta_o = self.backwards_pass(self.inputs_labels, h_out, o_out, weights_layer_2)
 
             weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                self.update_weights(self.X_train_with_bias, weights_layer_1, weights_layer_2, delta_weights_1,
+                self.update_weights(self.inputs_with_bias, weights_layer_1, weights_layer_2, delta_weights_1,
                                     delta_weights_2, delta_h, delta_o, h_out)
 
             if self.input_validation is not None or self.input_validation_labels is not None:
-                h_out, o_out = self.forward_pass(self.X_test_with_bias, weights_layer_1, weights_layer_2)
+                h_out, o_out = self.forward_pass(self.input_validation_with_bias, weights_layer_1, weights_layer_2)
                 [loss, mse] = self.compute_error(self.input_validation_labels, o_out)
             else:
                 [loss, mse] = self.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
-            print('batch epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+
+            if self.verbose:
+                print('batch epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
 
             # # Make a prediction on training data with the current weights
-            # _, predictions = self.forward_pass(self.inputs, weights_layer_1, weights_layer_2)
+            # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
             # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
@@ -98,7 +103,11 @@ class MLP:
         delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-            for idx, row in enumerate(self.X_train_with_bias.T):
+            # shuffle
+            self.inputs_with_bias, self.inputs_labels = shuffle(self.inputs_with_bias.T, self.inputs_labels)
+            self.inputs_with_bias = self.inputs_with_bias.T
+
+            for idx, row in enumerate(self.inputs_with_bias.T):
                 row = np.reshape(row, (len(row), 1))
                 y = np.array(self.inputs_labels[idx])
 
@@ -110,15 +119,17 @@ class MLP:
                     self.update_weights(row, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
                                         delta_h, delta_o, h_out)
 
-            _, o_out = self.forward_pass(self.X_train_with_bias, weights_layer_1, weights_layer_2)
+            _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
 
             [loss, mse] = self.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
-            print('sequential epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+
+            if self.verbose:
+                print('sequential epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
 
             # # Make a prediction on training data with the current weights
-            # _, predictions = self.forward_pass(self.inputs, weights_layer_1, weights_layer_2)
+            # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
             # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
@@ -183,86 +194,39 @@ class MLP:
         return loss, mse
 
 
-def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2):
-    meanA = [1, 0.5]
-    meanB = [-0.5, -1]
+if __name__ == "__main__":
 
-    sigmaA = np.diag([1, 1])
-    sigmaB = np.diag([1, 1])
+    percent_split = 0.2
+    use_validation_set = False
+    [inputs, inputs_labels, input_validation, input_validation_labels] = Utils.create_non_linearly_separable_data(use_validation_set=use_validation_set,
+                                                                            percent_split=percent_split)
 
-    classA = np.random.multivariate_normal(meanA, sigmaA, n)
-    labelsA = -np.ones((classA.shape[0], 1))
-    classB = np.random.multivariate_normal(meanB, sigmaB, n)
-    labelsB = np.ones((classB.shape[0], 1))
+    # Utils.plot_initial_data(inputs.T, inputs_labels)
 
-    X = np.concatenate((classA, classB), axis=0)
-    Y = np.concatenate((labelsA, labelsB))
+    num_hidden_nodes_layer_1 = 10
+    num_iterations = 50
+    learning_rate = 0.01
+    verbose = False
 
-    [inputs, inputs_labels] = shuffle(X, Y)
+    mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
+                    input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
+                    num_iterations=num_iterations, learning_rate=learning_rate , batch_train=True, verbose=verbose )
 
-    # inputs, inputs_labels, input_validation = None, input_validation_labels
-    if use_validation_set:
-        [inputs, input_validation, inputs_labels, input_validation_labels] = train_test_split(X, Y, test_size=0.2, random_state=42)
-        return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
+    [_, _, mse_batch] = mlp_batch.train()
 
-    return [inputs.T, inputs_labels, None, None]
+    mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
+                  input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
+                  num_iterations=num_iterations, learning_rate=learning_rate, batch_train=False, verbose=verbose )
 
+    [_, _, mse_seq] = mlp_seq.train()
 
-def plot_initial_data(inputs, targets):
-    # fig config
-    plt.figure()
-    plt.grid(True)
-
-    idx1 = np.where(targets == -1)[0]
-    idx2 = np.where(targets == 1)[0]
-
-    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=15)
-    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=15)
-
-    plt.ylim(-10, 10)
-    plt.xlim(-6, 6)
-
-    plt.show()
+    mse = [mse_seq, mse_batch]
+    legend_names = ['sequential error', 'batch error']
+    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations)
 
 
-def plot_error(error_seq, error_batch, num_epochs):
-    # fig config
-    plt.figure()
-    plt.grid(True)
-
-    # plt.ylim(0, 1)
-    plt.xlim(-0.5, num_epochs)
-
-    epochs = np.arange(0, num_epochs, 1)
-
-    plt.plot(epochs, error_seq)
-    plt.plot(epochs, error_batch)
-
-    plt.legend(['sequential error', 'batch error'], loc='upper right')
-
-    plt.show()
 
 
-percent_split = 0.2
-use_validation_set = True
-[inputs, inputs_labels, input_validation, input_validation_labels] = create_non_linearly_separable_data(use_validation_set=use_validation_set,
-                                                                        percent_split=percent_split)
 
-# plot_initial_data(X.T, Y)
 
-num_hidden_nodes_layer_1 = 4
-num_iterations = 20
 
-mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
-                input_validation_labels=input_validation_labels, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
-                num_iterations=num_iterations, batch_train=True)
-
-[weights_layer_1, weights_layer_2, mse_batch] = mlp_batch.train()
-
-mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
-              input_validation_labels=input_validation_labels, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
-              num_iterations=num_iterations, batch_train=False)
-
-[weights_layer_1, weights_layer_2, mse_seq] = mlp_seq.train()
-
-plot_error(mse_seq, mse_batch, num_epochs=num_iterations)
