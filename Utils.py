@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
+from sklearn.metrics import mean_squared_error, zero_one_loss
 
 np.random.seed(0)
 
@@ -72,3 +73,13 @@ def plot_error(error, legend_names, num_epochs):
     plt.legend(legend_names, loc='upper right')
 
     plt.show()
+
+def compute_error(targets, predictions):
+    mse = mean_squared_error(targets, predictions)
+
+    predictions = np.where(predictions >= 0, 1, -1)
+
+    # fraction of misclassifications
+    loss = zero_one_loss(targets, predictions, normalize=True)
+
+    return loss, mse

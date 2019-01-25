@@ -1,18 +1,14 @@
 from sklearn.utils import shuffle
-
 import numpy as np
 import math
-
-from sklearn.metrics import mean_squared_error, zero_one_loss
-
 import Utils
 
 np.random.seed(0)
 
 
 class MLP:
-    def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20, learning_rate=0.01, alpha=0.9,
-                 num_nodes_hidden_layer=5, num_output_layers=1, batch_train=True, verbose=False):
+    def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20,
+                 learning_rate=0.01, alpha=0.9, num_nodes_hidden_layer=5, num_output_layers=1, batch_train=True, verbose=False):
 
         self.original_inputs = inputs
         self.inputs_labels = inputs_labels
@@ -59,7 +55,6 @@ class MLP:
         for epoch in range(self.num_iterations):
 
             if self.batch_train is False:
-                # shuffle
                 self.inputs_with_bias, self.inputs_labels = shuffle(self.inputs_with_bias.T, self.inputs_labels)
                 self.inputs_with_bias = self.inputs_with_bias.T
 
@@ -74,20 +69,21 @@ class MLP:
                     self.update_weights(data, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
                                         delta_h, delta_o, h_out)
 
+                # if batch train all data then break
                 if self.batch_train:
                     break
 
             _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
-            [loss, mse] = self.compute_error(self.inputs_labels, o_out)
+            [loss, mse] = Utils.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
 
             if self.verbose:
-                print('sequential epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+                print('epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
 
             # # Make a prediction on training data with the current weights
             # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
-            # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
+            # [loss, mse] = Utils.compute_error(self.inputs_labels, predictions)
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
 
@@ -152,15 +148,7 @@ class MLP:
 
         return [weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2]
 
-    def compute_error(self, targets, predictions):
-        mse = mean_squared_error(targets, predictions)
 
-        predictions = np.where(predictions >= 0, 1, -1)
-
-        # fraction of misclassifications
-        loss = zero_one_loss(targets, predictions, normalize=True)
-
-        return loss, mse
 
 
 if __name__ == "__main__":
