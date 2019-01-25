@@ -1,6 +1,8 @@
 import numpy as np
 import math
 from sklearn.metrics import mean_squared_error, zero_one_loss
+import matplotlib.pyplot as plt
+from sklearn.utils import shuffle
 
 np.random.seed(0)
 
@@ -19,6 +21,10 @@ class MLP:
         self.num_inputs = np.shape(inputs)[0]
         self.num_hidden_nodes_layer_1 = num_hidden_nodes_layer_1
         self.num_hidden_nodes_layer_2 = num_hidden_nodes_layer_2
+
+        self.outtype = 'softmax'
+        self.beta = 0.5
+
 
     def initialize_weights(self, num_of_nodes_in_layer, num_of_inputs_in_neuron):
         # Need to add one one weight for bias term
@@ -60,22 +66,38 @@ class MLP:
         return (2 / (1 + np.exp(-inputs))) - 1
 
     def transfer_function_derivative(self, inputs):
-        return np.multiply((1 + inputs), (1 - inputs)) / 2
+        return np.multiply((1 + self.transfer_function(inputs)), (1 - self.transfer_function(inputs))) / 2
+
+    def activation_functions(self,outputs):
+        # Different types of output neurons
+        if self.outtype == "linear":
+            return outputs
+        elif self.outtype == "logistic":
+            return 1.0 / (1.0 + np.exp(-self.beta * outputs))
+        elif self.outtype == "softmax":
+
+
+            normalisers = np.sum(np.exp(outputs), axis=1) * np.ones((1, np.shape(outputs)[0]))
+            pred = np.transpose(np.exp(outputs)) / normalisers
+            return pred
+        else:
+            print ("error")
 
     def forward_pass(self, inputs, weights_layer_1, weights_layer_2):
         # add bias term in inputs
-        bias = np.ones(len(inputs), dtype=int)
-        inputs = np.column_stack([inputs, bias])
+
+        bias = np.ones(inputs.shape[1])
+        inputs = np.vstack((inputs, bias))
 
         # summed input signal Σxi * w1
-        hidden_in = np.dot(inputs, weights_layer_1)
+        hidden_in = np.dot(inputs.T, weights_layer_1)
         # output signal hj = φ( h ∗j )
-        hidden_out = np.column_stack([self.transfer_function(hidden_in), bias])
+        hidden_out = np.column_stack([self.transfer_function(hidden_in), bias]).T
 
         # summed input signal Σxi * w2
-        output_in = np.dot(hidden_out, weights_layer_2)
+        output_in = np.dot(hidden_out.T, weights_layer_2)
         # output signal
-        output_out = self.transfer_function(output_in)
+        output_out = self.activation_functions(output_in).T
 
         return hidden_out, output_out
 
@@ -96,6 +118,7 @@ class MLP:
 
     def update_weights(self, inputs, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2, delta_h,
                        delta_o, h_out):
+
         bias = np.ones(len(inputs), dtype=int)
 
         delta_weights_1 = np.multiply(delta_weights_1, self.alpha) - np.dot(np.column_stack([inputs, bias]).T,
@@ -116,3 +139,58 @@ class MLP:
         loss = zero_one_loss(targets, predictions, normalize=True)
 
         return loss, mse
+
+
+def create_non_linearly_separable_data():
+
+    meanA = [1, 0.5]
+    meanB = [-0.5, -1]
+
+    sigmaA = [[0.5, 0], [0, 0.5]]
+    sigmaB = [[-0.5, 0], [0, -1]]
+
+    n = 100
+
+    classA = np.random.multivariate_normal(meanA, sigmaA, n)
+    labelsA = -np.ones((classA.shape[0], 1))
+    classB = np.random.multivariate_normal(meanB, sigmaB, n)
+    labelsB = np.ones((classB.shape[0], 1))
+
+    X = np.concatenate((classA, classB), axis=0)
+    Y = np.concatenate((labelsA, labelsB))
+
+    # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    return [X, Y]
+
+
+def plot_initial_data(inputs, targets):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=15)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=15)
+
+    plt.ylim(-10, 10)
+    plt.xlim(-6, 6)
+
+    plt.show()
+
+
+
+[X, Y] = create_non_linearly_separable_data()
+
+# plot_initial_data(X, Y)
+
+num_outputs = 1
+num_hidden_nodes_layer_1 = 30
+num_hidden_nodes_layer_2 = 3
+
+
+mlp = MLP(inputs=X, targets=Y,num_outputs=num_outputs, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
+          num_hidden_nodes_layer_2=num_hidden_nodes_layer_2)
+
+mlp.train_batch()
