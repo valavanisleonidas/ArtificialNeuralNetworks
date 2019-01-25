@@ -10,25 +10,30 @@ np.random.seed(0)
 
 
 class MLP:
-    def __init__(self, inputs, targets,  num_iterations=20, learning_rate=0.01, alpha=0.9,
+    def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20, learning_rate=0.01, alpha=0.9,
                  num_hidden_nodes_layer_1=5, num_output_layers=1, batch_train=True):
 
         self.inputs = inputs
-        self.targets = targets
+        self.inputs_labels = inputs_labels
+
+        self.input_validation = input_validation
+        self.input_validation_labels = input_validation_labels
 
         self.alpha = alpha
         self.num_iterations = num_iterations
         self.learning_rate = learning_rate
 
-        self.num_inputs = np.shape(inputs)[0]
+        self.num_inputs = np.shape(self.inputs)[0]
         self.num_hidden_nodes_layer_1 = num_hidden_nodes_layer_1
         self.num_output_layers = num_output_layers
         self.batch_train = batch_train
 
-        self.inputs_with_bias = np.vstack((inputs,  np.ones(inputs.shape[1])))
+        self.X_train_with_bias = np.vstack((self.inputs, np.ones(self.inputs.shape[1])))
+
+        if input_validation_labels is not None:
+            self.X_test_with_bias = np.vstack((self.input_validation, np.ones(self.input_validation.shape[1])))
 
         self.mse = np.zeros((num_iterations))
-
 
     def initialize_weights(self, num_of_nodes_in_layer, num_of_inputs_in_neuron):
         # Need to add one one weight for bias term
@@ -46,7 +51,6 @@ class MLP:
         else:
             return self.train_seq()
 
-
     def train_batch(self):
         # Weights for first layer
         weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
@@ -58,21 +62,26 @@ class MLP:
         delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-            h_out, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
+            h_out, o_out = self.forward_pass(self.X_train_with_bias, weights_layer_1, weights_layer_2)
 
-            [loss, mse] = self.compute_error(self.targets, o_out)
+            delta_h, delta_o = self.backwards_pass(self.inputs_labels, h_out, o_out, weights_layer_2)
+
+            weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
+                self.update_weights(self.X_train_with_bias, weights_layer_1, weights_layer_2, delta_weights_1,
+                                    delta_weights_2, delta_h, delta_o, h_out)
+
+            if self.input_validation is not None or self.input_validation_labels is not None:
+                h_out, o_out = self.forward_pass(self.X_test_with_bias, weights_layer_1, weights_layer_2)
+                [loss, mse] = self.compute_error(self.input_validation_labels, o_out)
+            else:
+                [loss, mse] = self.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
             print('batch epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
 
-            delta_h, delta_o = self.backwards_pass(self.targets, h_out, o_out, weights_layer_2)
-
-            weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                self.update_weights(self.inputs_with_bias, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2, delta_h, delta_o, h_out)
-
             # # Make a prediction on training data with the current weights
             # _, predictions = self.forward_pass(self.inputs, weights_layer_1, weights_layer_2)
-            # [loss, mse] = self.compute_error(self.targets, predictions)
+            # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
 
@@ -89,32 +98,32 @@ class MLP:
         delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-            for idx, row in enumerate(self.inputs_with_bias.T):
-                row = np.reshape(row, (len(row),1) )
-                y = np.array(self.targets[idx])
+            for idx, row in enumerate(self.X_train_with_bias.T):
+                row = np.reshape(row, (len(row), 1))
+                y = np.array(self.inputs_labels[idx])
 
                 h_out, o_out = self.forward_pass(row, weights_layer_1, weights_layer_2)
 
                 delta_h, delta_o = self.backwards_pass(y, h_out, o_out, weights_layer_2)
 
                 weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                    self.update_weights(row, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2, delta_h, delta_o, h_out)
+                    self.update_weights(row, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
+                                        delta_h, delta_o, h_out)
 
-            _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
+            _, o_out = self.forward_pass(self.X_train_with_bias, weights_layer_1, weights_layer_2)
 
-            [loss, mse] = self.compute_error(self.targets, o_out)
+            [loss, mse] = self.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
             print('sequential epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
 
             # # Make a prediction on training data with the current weights
             # _, predictions = self.forward_pass(self.inputs, weights_layer_1, weights_layer_2)
-            # [loss, mse] = self.compute_error(self.targets, predictions)
+            # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
 
         return [weights_layer_1, weights_layer_2, self.mse]
-
 
     def transfer_function(self, inputs):
         return (2 / (1 + np.exp(-inputs))) - 1
@@ -173,7 +182,8 @@ class MLP:
 
         return loss, mse
 
-def create_non_linearly_separable_data(n=100,use_validation_set =False,percent_split=0.2):
+
+def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2):
     meanA = [1, 0.5]
     meanB = [-0.5, -1]
 
@@ -188,13 +198,14 @@ def create_non_linearly_separable_data(n=100,use_validation_set =False,percent_s
     X = np.concatenate((classA, classB), axis=0)
     Y = np.concatenate((labelsA, labelsB))
 
-    [X_train, Y_train] = shuffle(X, Y)
+    [inputs, inputs_labels] = shuffle(X, Y)
 
-    X_test = []
-    Y_test = []
+    # inputs, inputs_labels, input_validation = None, input_validation_labels
     if use_validation_set:
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-    return [X_train.T, Y_train, X_test.T, Y_test]
+        [inputs, input_validation, inputs_labels, input_validation_labels] = train_test_split(X, Y, test_size=0.2, random_state=42)
+        return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
+
+    return [inputs.T, inputs_labels, None, None]
 
 
 def plot_initial_data(inputs, targets):
@@ -213,6 +224,7 @@ def plot_initial_data(inputs, targets):
 
     plt.show()
 
+
 def plot_error(error_seq, error_batch, num_epochs):
     # fig config
     plt.figure()
@@ -230,27 +242,27 @@ def plot_error(error_seq, error_batch, num_epochs):
 
     plt.show()
 
+
 percent_split = 0.2
 use_validation_set = True
-[X, Y] = create_non_linearly_separable_data(use_validation_set=use_validation_set, percent_split=percent_split )
+[inputs, inputs_labels, input_validation, input_validation_labels] = create_non_linearly_separable_data(use_validation_set=use_validation_set,
+                                                                        percent_split=percent_split)
 
 # plot_initial_data(X.T, Y)
 
 num_hidden_nodes_layer_1 = 4
-num_iterations = 100
+num_iterations = 20
 
-mlp_batch = MLP(inputs=X, targets=Y, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
-        num_iterations=num_iterations, batch_train=True)
+mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
+                input_validation_labels=input_validation_labels, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
+                num_iterations=num_iterations, batch_train=True)
 
 [weights_layer_1, weights_layer_2, mse_batch] = mlp_batch.train()
 
-
-mlp_seq = MLP(inputs=X, targets=Y, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
-           num_iterations=num_iterations, batch_train=False)
-
+mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
+              input_validation_labels=input_validation_labels, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
+              num_iterations=num_iterations, batch_train=False)
 
 [weights_layer_1, weights_layer_2, mse_seq] = mlp_seq.train()
 
-plot_error(mse_seq, mse_batch,num_epochs=num_iterations)
-
-
+plot_error(mse_seq, mse_batch, num_epochs=num_iterations)
