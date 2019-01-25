@@ -18,7 +18,7 @@ class MLP:
         self.num_iterations = num_iterations
         self.learning_rate = learning_rate
 
-        self.num_inputs = np.shape(inputs)[0]
+        self.num_inputs = np.shape(inputs)[1]
         self.num_hidden_nodes_layer_1 = num_hidden_nodes_layer_1
         self.num_hidden_nodes_layer_2 = num_hidden_nodes_layer_2
 
@@ -86,18 +86,18 @@ class MLP:
     def forward_pass(self, inputs, weights_layer_1, weights_layer_2):
         # add bias term in inputs
 
-        bias = np.ones(inputs.shape[1])
-        inputs = np.vstack((inputs, bias))
+        bias = np.ones(inputs.shape[0])
+        inputs = np.column_stack((inputs, bias))
 
         # summed input signal Σxi * w1
-        hidden_in = np.dot(inputs.T, weights_layer_1)
+        hidden_in = np.dot(inputs, weights_layer_1)
         # output signal hj = φ( h ∗j )
         hidden_out = np.column_stack([self.transfer_function(hidden_in), bias]).T
 
         # summed input signal Σxi * w2
         output_in = np.dot(hidden_out.T, weights_layer_2)
         # output signal
-        output_out = self.activation_functions(output_in).T
+        output_out = self.transfer_function(output_in)
 
         return hidden_out, output_out
 
@@ -187,7 +187,7 @@ def plot_initial_data(inputs, targets):
 
 num_outputs = 1
 num_hidden_nodes_layer_1 = 30
-num_hidden_nodes_layer_2 = 3
+num_hidden_nodes_layer_2 = 1
 
 
 mlp = MLP(inputs=X, targets=Y,num_outputs=num_outputs, num_hidden_nodes_layer_1=num_hidden_nodes_layer_1,
