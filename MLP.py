@@ -14,8 +14,6 @@ class MLP:
     def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20, learning_rate=0.01, alpha=0.9,
                  num_nodes_hidden_layer=5, num_output_layers=1, batch_train=True, verbose=False):
 
-        self.verbose = verbose
-
         self.original_inputs = inputs
         self.inputs_labels = inputs_labels
 
@@ -27,6 +25,7 @@ class MLP:
         self.learning_rate = learning_rate
 
         self.num_inputs = np.shape(inputs)[0]
+        self.num_data = np.shape(inputs)[1]
         self.num_hidden_nodes_layer_1 = num_nodes_hidden_layer
         self.num_output_layers = num_output_layers
         self.batch_train = batch_train
@@ -36,7 +35,9 @@ class MLP:
         if input_validation_labels is not None:
             self.input_validation_with_bias = np.vstack((self.input_validation, np.ones(self.input_validation.shape[1])))
 
-        self.mse = np.zeros((num_iterations))
+        self.verbose = verbose
+
+        self.mse = np.zeros(num_iterations)
 
     def initialize_weights(self, num_of_nodes_in_layer, num_of_inputs_in_neuron):
         # Need to add one one weight for bias term
@@ -49,78 +50,34 @@ class MLP:
 
     def train(self):
 
-        if self.batch_train:
-            return self.train_batch()
-        else:
-            return self.train_seq()
-
-    def train_batch(self):
-        # Weights for first layer
         weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
-
-        # Weights for second layer
         weights_layer_2 = self.initialize_weights(self.num_hidden_nodes_layer_1, self.num_output_layers)
 
         delta_weights_1 = 0
         delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-            h_out, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
 
-            delta_h, delta_o = self.backwards_pass(self.inputs_labels, h_out, o_out, weights_layer_2)
+            if self.batch_train is False:
+                # shuffle
+                self.inputs_with_bias, self.inputs_labels = shuffle(self.inputs_with_bias.T, self.inputs_labels)
+                self.inputs_with_bias = self.inputs_with_bias.T
 
-            weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                self.update_weights(self.inputs_with_bias, weights_layer_1, weights_layer_2, delta_weights_1,
-                                    delta_weights_2, delta_h, delta_o, h_out)
+            for idx in range(self.num_data):
+                [data, labels] = self._fetch_data(idx)
 
-            if self.input_validation is not None or self.input_validation_labels is not None:
-                h_out, o_out = self.forward_pass(self.input_validation_with_bias, weights_layer_1, weights_layer_2)
-                [loss, mse] = self.compute_error(self.input_validation_labels, o_out)
-            else:
-                [loss, mse] = self.compute_error(self.inputs_labels, o_out)
+                h_out, o_out = self.forward_pass(data, weights_layer_1, weights_layer_2)
 
-            self.mse[epoch] = mse
-
-            if self.verbose:
-                print('batch epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
-
-            # # Make a prediction on training data with the current weights
-            # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
-            # [loss, mse] = self.compute_error(self.inputs_labels, predictions)
-            #
-            # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
-
-        return [weights_layer_1, weights_layer_2, self.mse]
-
-    def train_seq(self):
-        # Weights for first layer
-        weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
-
-        # Weights for second layer
-        weights_layer_2 = self.initialize_weights(self.num_hidden_nodes_layer_1, self.num_output_layers)
-
-        delta_weights_1 = 0
-        delta_weights_2 = 0
-
-        for epoch in range(self.num_iterations):
-            # shuffle
-            self.inputs_with_bias, self.inputs_labels = shuffle(self.inputs_with_bias.T, self.inputs_labels)
-            self.inputs_with_bias = self.inputs_with_bias.T
-
-            for idx, row in enumerate(self.inputs_with_bias.T):
-                row = np.reshape(row, (len(row), 1))
-                y = np.array(self.inputs_labels[idx])
-
-                h_out, o_out = self.forward_pass(row, weights_layer_1, weights_layer_2)
-
-                delta_h, delta_o = self.backwards_pass(y, h_out, o_out, weights_layer_2)
+                delta_h, delta_o = self.backwards_pass(labels, h_out, o_out, weights_layer_2)
 
                 weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                    self.update_weights(row, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
+                    self.update_weights(data, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
                                         delta_h, delta_o, h_out)
 
-            _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
+                if self.batch_train:
+                    break
 
+            _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
             [loss, mse] = self.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
@@ -135,6 +92,18 @@ class MLP:
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
 
         return [weights_layer_1, weights_layer_2, self.mse]
+
+    def _fetch_data(self, index):
+
+        if self.batch_train:
+            data = self.inputs_with_bias
+            labels = self.inputs_labels
+        else:
+            row = self.inputs_with_bias.T[index]
+            data = np.reshape(row, (len(row), 1))
+            labels = np.array(self.inputs_labels[index])
+
+        return [data, labels]
 
     def transfer_function(self, inputs):
         return (2 / (1 + np.exp(-inputs))) - 1
@@ -203,9 +172,9 @@ if __name__ == "__main__":
 
     # Utils.plot_initial_data(inputs.T, inputs_labels)
 
-    num_hidden_nodes_layer_1 = 10
-    num_iterations = 50
-    learning_rate = 0.01
+    num_hidden_nodes_layer_1 = 20
+    num_iterations = 20
+    learning_rate = 0.001
     verbose = False
 
     mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
