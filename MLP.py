@@ -46,11 +46,11 @@ class MLP:
 
     def train(self):
 
-        weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
-        weights_layer_2 = self.initialize_weights(self.num_hidden_nodes_layer_1, self.num_output_layers)
+        self.weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
+        self.weights_layer_2 = self.initialize_weights(self.num_hidden_nodes_layer_1, self.num_output_layers)
 
-        delta_weights_1 = 0
-        delta_weights_2 = 0
+        self.delta_weights_1 = 0
+        self.delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
 
@@ -61,19 +61,17 @@ class MLP:
             for idx in range(self.num_data):
                 [data, labels] = self._fetch_data(idx)
 
-                h_out, o_out = self.forward_pass(data, weights_layer_1, weights_layer_2)
+                h_out, o_out = self.forward_pass(data)
 
-                delta_h, delta_o = self.backwards_pass(labels, h_out, o_out, weights_layer_2)
+                delta_h, delta_o = self.backwards_pass(labels, h_out, o_out)
 
-                weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2 = \
-                    self.update_weights(data, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2,
-                                        delta_h, delta_o, h_out)
+                self.update_weights(data, delta_h, delta_o, h_out)
 
                 # if batch train all data then break
                 if self.batch_train:
                     break
 
-            _, o_out = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
+            _, o_out = self.forward_pass(self.inputs_with_bias)
             [loss, mse] = Utils.compute_error(self.inputs_labels, o_out)
 
             self.mse[epoch] = mse
@@ -87,7 +85,7 @@ class MLP:
             #
             # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
 
-        return [weights_layer_1, weights_layer_2, self.mse]
+        return [self.weights_layer_1, self.weights_layer_2, self.mse]
 
     def _fetch_data(self, index):
 
@@ -107,46 +105,44 @@ class MLP:
     def transfer_function_derivative(self, inputs):
         return np.multiply((1 + self.transfer_function(inputs)), (1 - self.transfer_function(inputs))) / 2
 
-    def forward_pass(self, inputs, weights_layer_1, weights_layer_2):
+    def forward_pass(self, inputs):
 
         bias = np.ones(inputs.shape[1])
 
         # summed input signal Σxi * w1
-        hidden_in = np.dot(inputs.T, weights_layer_1.T).T
+        hidden_in = np.dot(inputs.T, self.weights_layer_1.T).T
         # output signal hj = φ( h ∗j )
         hidden_out = np.vstack([self.transfer_function(hidden_in), bias]).T
 
         # summed input signal Σxi * w2
-        output_in = np.dot(hidden_out, weights_layer_2.T)
+        output_in = np.dot(hidden_out, self.weights_layer_2.T)
         # output signal
         output_out = self.transfer_function(output_in)
 
         return hidden_out, output_out
 
-    def backwards_pass(self, targets, h_out, o_out, weights_layer_2):
+    def backwards_pass(self, targets, h_out, o_out):
 
         # compute output layer delta
         # δ(o) = (ok − tk) * φ′(o∗k)
         delta_o = np.multiply((o_out - targets), self.transfer_function_derivative(o_out))
 
         # compute hidden layer delta
-        delta_h = np.dot(delta_o, weights_layer_2) * self.transfer_function_derivative(h_out)
+        delta_h = np.dot(delta_o, self.weights_layer_2) * self.transfer_function_derivative(h_out)
 
         # remove the extra row that we previously added to the forward pass to take care of the bias term.
         delta_h = delta_h[:, :self.num_hidden_nodes_layer_1]
 
         return delta_h, delta_o
 
-    def update_weights(self, inputs, weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2, delta_h,
-                       delta_o, h_out):
+    def update_weights(self, inputs, delta_h, delta_o, h_out):
 
-        delta_weights_1 = np.multiply(delta_weights_1, self.alpha) - np.dot(inputs, delta_h) * (1 - self.alpha)
-        delta_weights_2 = np.multiply(delta_weights_2, self.alpha) - np.dot(h_out.T, delta_o) * (1 - self.alpha)
+        self.delta_weights_1 = np.multiply(self.delta_weights_1, self.alpha) - np.dot(inputs, delta_h) * (1 - self.alpha)
+        self.delta_weights_2 = np.multiply(self.delta_weights_2, self.alpha) - np.dot(h_out.T, delta_o) * (1 - self.alpha)
 
-        weights_layer_1 += delta_weights_1.T * self.learning_rate
-        weights_layer_2 += delta_weights_2.T * self.learning_rate
+        self.weights_layer_1 += self.delta_weights_1.T * self.learning_rate
+        self.weights_layer_2 += self.delta_weights_2.T * self.learning_rate
 
-        return [weights_layer_1, weights_layer_2, delta_weights_1, delta_weights_2]
 
 
 
