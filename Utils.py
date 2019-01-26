@@ -3,6 +3,9 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error, zero_one_loss
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 np.random.seed(0)
 
@@ -36,6 +39,8 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_
 def create_one_out_of_n_dataset(n=8):
     data = -np.ones((n, n))
     np.fill_diagonal(data, 1)
+    # labels = np.zeros((n,n))
+    # np.fill_diagonal(labels, 1)
 
     return [data, data]
 
@@ -62,7 +67,7 @@ def plot_error(error, legend_names, num_epochs):
     plt.figure()
     plt.grid(True)
 
-    # plt.ylim(0, 1)
+    plt.ylim(0, 1)
     plt.xlim(-0.5, num_epochs)
 
     epochs = np.arange(0, num_epochs, 1)
@@ -82,4 +87,22 @@ def compute_error(targets, predictions):
     # fraction of misclassifications
     loss = zero_one_loss(targets, predictions, normalize=True)
 
-    return loss, mse
+    return loss*100, mse
+
+def plot_3d_data(X,Y,Z):
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    # Plot the surface.
+    surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+
+    # Customize the z axis.
+    ax.set_zlim(-1.01, 1.01)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+
+    plt.show()
