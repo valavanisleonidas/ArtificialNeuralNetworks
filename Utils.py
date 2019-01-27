@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
-from sklearn.metrics import mean_squared_error, zero_one_loss
+from sklearn.metrics import mean_squared_error, zero_one_loss, accuracy_score
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -79,18 +79,19 @@ def plot_error(error, legend_names, num_epochs):
 
     plt.show()
 
-def compute_error(targets, predictions):
+
+def compute_error(targets, predictions, binary):
     mse = mean_squared_error(targets, predictions)
-
-    predictions = np.where(predictions >= 0, 1, -1)
-
+    loss = 0
     # fraction of misclassifications
-    loss = zero_one_loss(targets, predictions, normalize=True)
+    if binary:
+        predictions = np.where(predictions >= 0, 1, -1)
+        loss = zero_one_loss(targets, predictions, normalize=True)
 
-    return loss*100, mse
+    return loss * 100, mse
 
-def plot_3d_data(X,Y,Z):
 
+def plot_3d_data(X, Y, Z):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     # Plot the surface.
