@@ -9,7 +9,7 @@ np.random.seed(0)
 
 class perceptron(object):
     def __init__(self, X, target, n_epochs=20, learning_rate=0.001, activation_method='binary', batch_train=True,
-                 perceptron_learning=True):
+                 perceptron_learning=True, verbose=False):
 
         self.activation_method = activation_method
         self.targets = target
@@ -20,6 +20,7 @@ class perceptron(object):
         self.n_epochs = n_epochs
         self.batch_train = batch_train
         self.perceptron_learning = perceptron_learning
+        self.verbose = verbose
 
         if np.ndim(X) > 1:
             self.nIn = np.shape(X)[1]
@@ -81,9 +82,11 @@ class perceptron(object):
                 # convert to (length,1)
                 self.weights += np.reshape(row_update, (len(self.weights), 1))
 
-            self.errors[epoch] = np.mean(errors)
-            print('{0} {1} {2}'.format("Sequential", epoch, self.errors[epoch]))
-            Utils.plot_Perceptron(self.X, self.targets, self.weights, 'Sequential Perceptron ' + str(epoch))
+            self.errors[epoch] = np.mean(errors**2 / 2)
+
+            if self.verbose:
+                print('{0} {1} {2}'.format("Sequential", epoch, self.errors[epoch]))
+                Utils.plot_Perceptron(self.X, self.targets, self.weights, 'Sequential Perceptron ' + str(epoch))
 
     def _train_weights_Batch(self):
 
@@ -99,9 +102,10 @@ class perceptron(object):
 
             self.weights += self.learning_rate * np.dot(np.transpose(self.X), errors)
 
-            self.errors[i] = np.mean(errors)
-            print('{0} {1} {2}'.format("Batch", i, self.errors[i]))
-            Utils.plot_Perceptron(self.X, self.targets, self.weights, 'Batch Perceptron ' + str(i))
+            self.errors[i] = np.mean(errors**2 / 2)
+            if self.verbose:
+                print('{0} {1} {2}'.format("Batch", i, self.errors[i]))
+                Utils.plot_Perceptron(self.X, self.targets, self.weights, 'Batch Perceptron ' + str(i))
 
     def perceptron_learning_rule(self, idx= None):
         if self.batch_train:
@@ -121,7 +125,7 @@ if __name__ == "__main__":
 
     # Utils.plot_initial_data(X, Y)
 
-    learning_rate = 0.01
+    learning_rate = 0.0001
     n_epochs = 20
     perceptron_learning = False
 
@@ -142,3 +146,20 @@ if __name__ == "__main__":
     else:
         title = 'Delta Rule'
     Utils.plot_error(error, legend_names, n_epochs,title)
+
+
+
+    # Plot multiple learning rates plot
+    lea_rate = [ 1e-5, 1e-4, 1e-3 , 0.001]
+    # lea_rate = [ 0.01, 0.1]
+    learning_rates = []
+    for l in lea_rate:
+
+        seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=l, activation_method='binary',
+                         batch_train=True, perceptron_learning=perceptron_learning)
+        [_, error_seq] = seq.train()
+        learning_rates.append(error_seq)
+
+    Utils.plot_error(learning_rates, lea_rate, n_epochs,title)
+
+
