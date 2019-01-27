@@ -190,7 +190,9 @@ class perceptron(object):
 
                 self.predictions[idx] = self.predict(row)
 
-                errors[idx] = self.targets[idx] - self.predictions[idx]
+                # errors[idx] = self.targets[idx] - self.predictions[idx]
+                # errors[idx] = self.perceptron_learning_rule('Sequential', idx)
+                errors[idx] = self.delta_learning_rule('Sequential', idx)
 
                 row_update = self.learning_rate * np.dot(row, errors[idx])
                 # convert to (length,1)
@@ -205,13 +207,28 @@ class perceptron(object):
         for i in range(self.n_epochs):
             self.predictions = self.predict()
 
-            errors = self.targets - self.predictions
+            # errors = self.targets - self.predictions
+            errors = self.delta_learning_rule('Batch', 0)
 
             self.weights += self.learning_rate * np.dot(np.transpose(self.X), errors)
 
             self.errors[i] = np.mean(errors)
             print('{0} {1} {2}'.format("Batch", i, self.errors[i]))
             plot_data(self.X, self.targets, self.weights, 'Batch Perceptron ' + str(i))
+
+    def perceptron_learning_rule(self, algorithm_name, idx):
+        if algorithm_name == 'Batch':
+            return self.targets - self.predictions
+        elif algorithm_name == 'Sequential':
+            return self.targets[idx] - self.predictions[idx]
+
+    def delta_learning_rule(self, algorithm_name, idx):
+        if algorithm_name == 'Batch':
+            return self.targets - np.dot(self.X, self.weights)
+        elif algorithm_name == 'Sequential':
+            return self.targets[idx] - np.dot(self.weights.T, self.X[idx])
+
+
 
 
 
