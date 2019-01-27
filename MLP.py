@@ -47,7 +47,7 @@ class MLP:
         max = 1 / math.sqrt(num_of_inputs_in_neuron)
         return np.random.normal(min, max, size=(num_of_inputs_in_neuron, num_of_nodes_in_layer + 1))
 
-    def train(self):
+    def fit(self):
 
         self.weights_layer_1 = self.initialize_weights(self.num_inputs, self.num_hidden_nodes_layer_1)
         self.weights_layer_2 = self.initialize_weights(self.num_hidden_nodes_layer_1, self.num_output_layers)
@@ -73,7 +73,9 @@ class MLP:
                 # if batch train all data then break
                 if self.batch_train:
                     break
-            _, o_out = self.forward_pass(self.inputs_with_bias)
+
+
+            o_out = self.forward_pass(self.inputs_with_bias)[1]
 
             if self.binary is False and epoch % 50 == 0:
                 num_data = int(math.sqrt(len(o_out)))
@@ -83,11 +85,7 @@ class MLP:
                 Z = np.reshape(o_out, (num_data, num_data))
                 Utils.plot_3d_data(X, Y, Z)
 
-            [loss, mse] = Utils.compute_error(self.inputs_labels, o_out, self.binary)
-            self.mse[epoch] = mse
-
-            if self.verbose:
-                print('epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+            self.mse[epoch] = self.evaluate(o_out)
 
             # # Make a prediction on training data with the current weights
             # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
@@ -97,9 +95,25 @@ class MLP:
 
         return [self.weights_layer_1, self.weights_layer_2, self.mse]
 
-    def predict(self):
-        _, o_out = self.forward_pass(self.inputs_with_bias)
+    def predict(self, test_input):
+
+        if test_input.shape[0] != self.inputs_with_bias.shape[0]:
+            test_input = np.vstack((test_input, np.ones(test_input.shape[1])))
+
+        o_out = self.forward_pass(test_input)[1]
+
         return o_out
+
+    def evaluate(self, o_out):
+
+        [loss, mse] = Utils.compute_error(self.inputs_labels, o_out, self.binary)
+        #
+        # self.mse[epoch] = mse
+
+        if self.verbose:
+            print('epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+
+        return mse
 
     def _fetch_data(self, index):
 
@@ -178,14 +192,14 @@ if __name__ == "__main__":
                     input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
                     num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True, verbose=verbose)
 
-    [_, _, mse_batch] = mlp_batch.train()
+    [_, _, mse_batch] = mlp_batch.fit()
 
     mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                   input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
                   num_iterations=num_iterations, learning_rate=learning_rate, batch_train=False, verbose=verbose)
 
-    [_, _, mse_seq] = mlp_seq.train()
+    [_, _, mse_seq] = mlp_seq.fit()
 
     mse = [mse_seq, mse_batch]
     legend_names = ['sequential error', 'batch error']
-    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations)
+    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations, title='')
