@@ -75,9 +75,16 @@ class MLP:
                     break
             _, o_out = self.forward_pass(self.inputs_with_bias)
 
-            # [loss, mse] = Utils.compute_error(self.inputs_labels, o_out, self.binary)
-            #
-            # self.mse[epoch] = mse
+            if self.binary is False and epoch % 50 == 0:
+                num_data = int(math.sqrt(len(o_out)))
+                xx = np.arange(-5, 5, 0.5)
+                yy = np.arange(-5, 5, 0.5)
+                X, Y = np.meshgrid(xx, yy)
+                Z = np.reshape(o_out, (num_data, num_data))
+                Utils.plot_3d_data(X, Y, Z)
+
+            [loss, mse] = Utils.compute_error(self.inputs_labels, o_out, self.binary)
+            self.mse[epoch] = mse
 
             if self.verbose:
                 print('epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))

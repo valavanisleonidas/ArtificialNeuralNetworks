@@ -113,7 +113,7 @@ def plot_error(error, legend_names, num_epochs, title):
     plt.show()
 
 
-def plot_3d_data(X, Y, Z):
+def plot_3d_data(X, Y, Z, pause = True):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     # Plot the surface.
@@ -128,7 +128,10 @@ def plot_3d_data(X, Y, Z):
     # Add a color bar which maps values to colors.
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
-    plt.show()
+    if pause:
+        plt.pause(interval=.1)
+    else:
+        plt.show()
 
 
 def plot_Perceptron(inputs, targets, weights, title):

@@ -2,6 +2,7 @@ import numpy as np
 from MLP import MLP
 import matplotlib.pyplot as plt
 import Utils
+
 def run(X,Y,Z):
 
     targets = np.reshape(Z, (1, (len(X) * len(Y)))).T
@@ -13,14 +14,14 @@ def run(X,Y,Z):
 
     patterns = np.vstack((X, Y))
 
-    num_hidden_nodes_layer_1 = 50
-    num_iterations = 300
-    learning_rate = 0.1
+    num_hidden_nodes_layer_1 = 20
+    num_iterations = 5000
+    learning_rate = 0.001
     verbose = False
 
     mlp_batch = MLP(inputs=patterns, inputs_labels=targets, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
                     num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True, verbose=verbose,
-                    binary=False,num_output_layers =1)
+                    binary=False, num_output_layers=1)
 
     [w1, w2, mse_batch] = mlp_batch.train()
 
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     Z = np.exp(-(np.square(X) + np.square(Y)) / 10) - 0.5
 
     print(Z.shape)
-    Utils.plot_3d_data(X, Y, Z)
+    Utils.plot_3d_data(X, Y, Z, pause=False)
 
 
     n_X = len(X)
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     Z = np.reshape(out, (n_X, n_Y))
 
 
-    Utils.plot_3d_data(X, Y, Z)
+    # Utils.plot_3d_data(X, Y, Z)
 
 
 
