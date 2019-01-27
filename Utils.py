@@ -10,6 +10,27 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 np.random.seed(0)
 
 
+def create_linearly_separable_data():
+    meanA = [2, 1.5]
+    meanB = [-2.5, -2.5]
+
+    sigmaA = [[1, 0], [0, 0.5]]
+    sigmaB = [[-1, 0], [0, -1]]
+
+    n = 100
+
+    classA = np.random.multivariate_normal(meanA, sigmaA, n)
+    labelsA = -np.ones((classA.shape[0], 1))
+    classB = np.random.multivariate_normal(meanB, sigmaB, n)
+    labelsB = np.ones((classB.shape[0], 1))
+
+    X = np.concatenate((classA, classB), axis=0)
+    Y = np.concatenate((labelsA, labelsB))
+
+    # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    return [X, Y]
+
+
 def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2):
     meanA = [1, 0.5]
     meanB = [-0.5, -1]
@@ -45,6 +66,17 @@ def create_one_out_of_n_dataset(n=8):
     return [data, data]
 
 
+
+def compute_error(targets, predictions, binary):
+    mse = mean_squared_error(targets, predictions)
+    loss = 0
+    # fraction of misclassifications
+    if binary:
+        predictions = np.where(predictions >= 0, 1, -1)
+        loss = zero_one_loss(targets, predictions, normalize=True)
+
+    return loss * 100, mse
+
 def plot_initial_data(inputs, targets):
     # fig config
     plt.figure()
@@ -62,7 +94,7 @@ def plot_initial_data(inputs, targets):
     plt.show()
 
 
-def plot_error(error, legend_names, num_epochs):
+def plot_error(error, legend_names, num_epochs, title):
     # fig config
     plt.figure()
     plt.grid(True)
@@ -75,20 +107,10 @@ def plot_error(error, legend_names, num_epochs):
     for i in range(len(error)):
         plt.plot(epochs, error[i][:])
 
+    plt.title(title)
     plt.legend(legend_names, loc='upper right')
 
     plt.show()
-
-
-def compute_error(targets, predictions, binary):
-    mse = mean_squared_error(targets, predictions)
-    loss = 0
-    # fraction of misclassifications
-    if binary:
-        predictions = np.where(predictions >= 0, 1, -1)
-        loss = zero_one_loss(targets, predictions, normalize=True)
-
-    return loss * 100, mse
 
 
 def plot_3d_data(X, Y, Z):
@@ -107,3 +129,38 @@ def plot_3d_data(X, Y, Z):
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
     plt.show()
+
+
+def plot_Perceptron(inputs, targets, weights, title):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=10)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=10)
+
+    plt.title(title)
+
+    plt.ylim(-10, 10)
+    plt.xlim(-6, 6)
+
+    xx = np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1]))
+    slope = -(weights[2] / weights[1]) / (weights[2] / weights[0])
+    intercept = -weights[2] / weights[1]
+
+    # y =mx+c, m is slope and c is intercept
+    y = (slope * xx) + intercept
+
+    plt.plot(xx, y, 'r')
+
+    # # third
+    # xs = [0, -weights[2] / weights[0]]  # x-coordinate of the two points on line.
+    # ys = [-weights[2] / weights[1], 0]
+    #
+    # plt.plot(xs, ys, 'b')
+    # plt.savefig(title + '.png')
+    plt.pause(interval=.1)
+
