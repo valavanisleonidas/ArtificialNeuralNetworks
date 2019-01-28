@@ -49,6 +49,22 @@ def create_mackey_glass_dataset(times, noise=0):
     return np.array(inputs), output.reshape(output.shape[0], 1), sequence
 
 
+def create_model(num_hidden_layers=2):
+    model = Sequential()
+    model.add(Dense(number_of_nodes, input_dim=dim_2, activation='sigmoid'))
+    # model.add(Dropout(0.10))
+
+    if num_hidden_layers == 3:
+        model.add(Dense(100))
+        model.add(Activation('sigmoid'))
+
+    # model.add(Dropout(0.10))
+    model.add(Dense(Y_test.shape[1]))
+    model.add(Activation('linear'))
+
+    return model
+
+
 if __name__ == "__main__":
     input, output, time_series = create_mackey_glass_dataset([20, 15, 10, 5, 0])
 
@@ -73,15 +89,9 @@ if __name__ == "__main__":
     validation_data = [X_test, Y_test]
     epochs = 5000
     number_of_nodes = 10
+    num_hidden_layers = 2
 
-    model = Sequential()
-    model.add(Dense(number_of_nodes, input_dim=dim_2, activation='sigmoid'))
-    model.add(Dropout(0.10))
-    # model.add(Dense(100))
-    # model.add(Activation('sigmoid'))
-    # model.add(Dropout(0.10))
-    model.add(Dense(Y_test.shape[1]))
-    model.add(Activation('linear'))
+    model = create_model(num_hidden_layers=num_hidden_layers)
 
     model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=[monitor])
 
@@ -92,6 +102,6 @@ if __name__ == "__main__":
     print("Generating test predictions...")
     preds = model.predict(X_test)
     eval = model.evaluate(X_test, Y_test)
-
+    print(eval)
     Utils.plot_glass_data(preds, Y_test, "Predictions vs Actual data")
     # print(preds)
