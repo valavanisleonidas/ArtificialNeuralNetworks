@@ -52,12 +52,13 @@ def create_mackey_glass_dataset(times, noise=0):
 if __name__ == "__main__":
     input, output, time_series = create_mackey_glass_dataset([20, 15, 10, 5, 0])
 
-    Utils.plot_glass_data(time_series)
+    # Utils.plot_glass_data(time_series)
 
     X_train = input[0:1000, :]
     X_test = input[1000:1200, :]
     Y_train = output[0:1000]
     Y_test = output[1000:1200]
+
     dim_1 = X_train.shape[0]
     dim_2 = X_train.shape[1]
     # X_train = np.reshape()
@@ -65,30 +66,34 @@ if __name__ == "__main__":
 
     print(X_train.shape, Y_test.shape)
 
-    optimizer = Adam(lr=0.004)
-    monitor = 'accuracy'
+    optimizer = Adam(lr=0.04)
+    monitor = 'mae'
     earlystop = EarlyStopping(monitor="val_loss", patience=5, verbose=1, mode='auto')
     callbacks = [earlystop]
-    batch_size = 10
+    batch_size = 100
     validation_data = [X_test, Y_test]
     epochs = 100
+    number_of_nodes = 30
+
 
     model = Sequential()
-    model.add(Dense(100, input_shape=(dim_2, )))
-    model.add(Activation('sigmoid'))
+    model.add(Dense(number_of_nodes, input_shape=(dim_2, ), activation='sigmoid'))
     model.add(Dropout(0.10))
     # model.add(Dense(100))
     # model.add(Activation('sigmoid'))
     # model.add(Dropout(0.10))
     model.add(Dense(Y_test.shape[1]))
-    model.add(Activation('softmax'))
+    model.add(Activation('linear'))
 
     model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=[monitor])
 
     print("Training...")
-    model.fit(X_train, Y_train, epochs=epochs, validation_split=0.1, verbose=True, callbacks=callbacks,
+    model.fit(X_train, Y_train, epochs=epochs, validation_split=0.2, verbose=True, callbacks=callbacks,
               batch_size=batch_size)
 
     print("Generating test predictions...")
     preds = model.predict(X_test)
-    print(preds)
+    eval = model.evaluate(X_test, Y_test)
+
+    print(eval)
+    # print(preds)
