@@ -8,10 +8,9 @@ np.random.seed(0)
 
 
 class perceptron(object):
-    def __init__(self, X, target, n_epochs=20, learning_rate=0.001, activation_method='binary', batch_train=True,
+    def __init__(self, X, target, n_epochs=20, learning_rate=0.001, batch_train=True,
                  perceptron_learning=True, verbose=False):
 
-        self.activation_method = activation_method
         self.targets = target
         self.learning_rate = learning_rate
         self.X = X
@@ -41,8 +40,7 @@ class perceptron(object):
         self.X = np.concatenate((X, np.ones((np.shape(X)[0], 1))), axis=1)
 
     def activation_function(self, threshold):
-        if self.activation_method is 'binary':
-            return np.where(threshold >= 0, 1, -1)
+        return np.where(threshold >= 0, 1, -1)
 
     def predict(self, input=None):
 
@@ -50,9 +48,12 @@ class perceptron(object):
             input = self.X
 
         thresholds = np.dot(input, self.weights)
-        predictions = self.activation_function(thresholds)
 
-        return predictions
+        if self.perceptron_learning:
+            predictions = self.activation_function(thresholds)
+            return predictions
+
+        return thresholds
 
     def train(self):
         self.X, self.targets = shuffle(self.X, self.targets)
@@ -125,15 +126,15 @@ if __name__ == "__main__":
 
     # Utils.plot_initial_data(X, Y)
 
-    learning_rate = 0.0001
-    n_epochs = 20
+    learning_rate = 0.001
+    n_epochs = 40
     perceptron_learning = False
 
-    seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary',
+    seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate,
                      batch_train=False, perceptron_learning=perceptron_learning)
     [_, error_seq] = seq.train()
 
-    batch = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate, activation_method='binary',
+    batch = perceptron(X, Y, n_epochs=n_epochs, learning_rate=learning_rate,
                        batch_train=True, perceptron_learning=perceptron_learning)
     [_, error_batch] = batch.train()
 
@@ -155,7 +156,7 @@ if __name__ == "__main__":
     learning_rates = []
     for l in lea_rate:
 
-        seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=l, activation_method='binary',
+        seq = perceptron(X, Y, n_epochs=n_epochs, learning_rate=l,
                          batch_train=True, perceptron_learning=perceptron_learning)
         [_, error_seq] = seq.train()
         learning_rates.append(error_seq)
