@@ -98,6 +98,8 @@ class MLP:
     def predict(self, test_input):
 
         if test_input.shape[0] != self.inputs_with_bias.shape[0]:
+            if np.ndim(test_input) == 1:
+                test_input = np.reshape(test_input, (test_input.shape[0],1))
             test_input = np.vstack((test_input, np.ones(test_input.shape[1])))
 
         o_out = self.forward_pass(test_input)[1]
@@ -174,6 +176,7 @@ class MLP:
         self.weights_layer_2 += self.delta_weights_2.T * self.learning_rate
 
 
+
 if __name__ == "__main__":
     percent_split = 0.2
     use_validation_set = False
@@ -193,6 +196,8 @@ if __name__ == "__main__":
                     num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True, verbose=verbose)
 
     [_, _, mse_batch] = mlp_batch.fit()
+
+    Utils.plot_decision_boundary_mlp(inputs,inputs_labels, mlp_batch)
 
     mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                   input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,

@@ -179,3 +179,49 @@ def plot_Perceptron(inputs, targets, weights, title):
     # plt.plot(xs, ys, 'b')
     # plt.savefig(title + '.png')
     plt.pause(interval=.1)
+
+
+
+def plot_decision_boundary_mlp(data,targets, mlp):
+    # Set min and max values and give it some padding
+    x_min, x_max = data[0, :].min() - .5, data[0, :].max() + .5
+    y_min, y_max = data[1, :].min() - .5, data[1, :].max() + .5
+    h = 0.01
+    # Generate a grid of points with distance h between them
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+
+    samples = np.vstack([xx.ravel(), yy.ravel()]).T
+
+    # Predict the function value for the whole gid
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    boundary = [mlp.predict(sample) for sample in samples]
+
+    boundary = np.reshape(boundary,(xx.shape))
+
+    # Plot the contour and training examples
+    plt.contourf(xx, yy, boundary, cmap=plt.cm.Spectral)
+    # plt.scatter(data[0, :], data[1, :],  )
+    plt.scatter(data[0, idx1], data[1, idx1], s=15, cmap=plt.cm.Spectral)
+    plt.scatter(data[0, idx2,], data[1, idx2], s=15, cmap=plt.cm.Spectral)
+
+    plt.show()
+
+    # x = np.arange(-2, 6, 0.02)
+    # x_axis, y_axis = np.meshgrid(x, x)
+    # x_axis = x_axis.ravel()
+    # y_axis = y_axis.ravel()
+    # samples = np.vstack([x_axis, y_axis]).T
+    # for c in np.unique(self.targets):
+    #     plt.scatter(self.inputs[np.where(c == self.targets), 0], self.inputs[np.where(c == self.targets), 1])
+    # boundary = [self.predict_MLP(sample) for sample in samples]
+    # boundary = np.asarray(boundary)
+    # boundary = boundary.reshape(len(x), len(x))
+    # plt.contour(x, x, boundary, cmap=cm.binary, alpha=0.5)  # cmap=cm.jet
+    # plt.xlim(right=6)
+    # plt.xlim(left=-2)
+    # plt.ylim(top=6)
+    # plt.ylim(bottom=-2)
+    # plt.show()
