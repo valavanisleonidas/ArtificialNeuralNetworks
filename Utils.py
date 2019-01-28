@@ -66,7 +66,6 @@ def create_one_out_of_n_dataset(n=8):
     return [data, data]
 
 
-
 def compute_error(targets, predictions, binary):
     mse = mean_squared_error(targets, predictions)
     loss = 0
@@ -76,6 +75,7 @@ def compute_error(targets, predictions, binary):
         loss = zero_one_loss(targets, predictions, normalize=True)
 
     return loss * 100, mse
+
 
 def plot_initial_data(inputs, targets):
     # fig config
@@ -113,7 +113,7 @@ def plot_error(error, legend_names, num_epochs, title):
     plt.show()
 
 
-def plot_3d_data(X, Y, Z, pause = True):
+def plot_3d_data(X, Y, Z, pause=True):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     # Plot the surface.
@@ -134,18 +134,17 @@ def plot_3d_data(X, Y, Z, pause = True):
         plt.show()
 
 
-def plot_glass_data(data):
+def plot_glass_data(pred, y_test, title):
     # fig config
-    plt.figure()
+    fig = plt.figure()
     plt.grid(True)
+    epochs = np.arange(0, len(pred), 1)
 
-    epochs = np.arange(0, len(data), 1)
-
-    plt.plot(epochs, data)
-
+    plt.title(title)
+    plt.plot(epochs, pred, color='r',label='Prediction')
+    plt.plot(epochs, y_test, color = 'b',label='Actual data')
+    plt.legend()
     plt.show()
-
-
 
 
 def plot_Perceptron(inputs, targets, weights, title):
@@ -180,4 +179,3 @@ def plot_Perceptron(inputs, targets, weights, title):
     # plt.plot(xs, ys, 'b')
     # plt.savefig(title + '.png')
     plt.pause(interval=.1)
-

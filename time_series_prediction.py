@@ -52,7 +52,7 @@ def create_mackey_glass_dataset(times, noise=0):
 if __name__ == "__main__":
     input, output, time_series = create_mackey_glass_dataset([20, 15, 10, 5, 0])
 
-    # Utils.plot_glass_data(time_series)
+    # Utils.plot_glass_data(input)
 
     X_train = input[0:1000, :]
     X_test = input[1000:1200, :]
@@ -63,21 +63,19 @@ if __name__ == "__main__":
     dim_2 = X_train.shape[1]
     # X_train = np.reshape()
 
-
     print(X_train.shape, Y_test.shape)
 
     optimizer = Adam(lr=0.04)
-    monitor = 'mae'
-    earlystop = EarlyStopping(monitor="val_loss", patience=5, verbose=1, mode='auto')
+    monitor = 'mse'
+    earlystop = EarlyStopping(monitor="val_loss", patience=50, verbose=1, mode='auto')
     callbacks = [earlystop]
-    batch_size = 100
+    batch_size = 500
     validation_data = [X_test, Y_test]
-    epochs = 100
-    number_of_nodes = 30
-
+    epochs = 5000
+    number_of_nodes = 10
 
     model = Sequential()
-    model.add(Dense(number_of_nodes, input_shape=(dim_2, ), activation='sigmoid'))
+    model.add(Dense(number_of_nodes, input_dim=dim_2, activation='sigmoid'))
     model.add(Dropout(0.10))
     # model.add(Dense(100))
     # model.add(Activation('sigmoid'))
@@ -89,11 +87,11 @@ if __name__ == "__main__":
 
     print("Training...")
     model.fit(X_train, Y_train, epochs=epochs, validation_split=0.2, verbose=True, callbacks=callbacks,
-              batch_size=batch_size)
+              batch_size=batch_size, shuffle=True)
 
     print("Generating test predictions...")
     preds = model.predict(X_test)
     eval = model.evaluate(X_test, Y_test)
 
-    print(eval)
+    Utils.plot_glass_data(preds, Y_test, "Predictions vs Actual data")
     # print(preds)
