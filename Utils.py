@@ -134,6 +134,20 @@ def plot_3d_data(X, Y, Z, pause = True):
         plt.show()
 
 
+def plot_glass_data(data):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    epochs = np.arange(0, len(data), 1)
+
+    plt.plot(epochs, data)
+
+    plt.show()
+
+
+
+
 def plot_Perceptron(inputs, targets, weights, title):
     # fig config
     plt.figure()
