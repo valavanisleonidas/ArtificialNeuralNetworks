@@ -8,9 +8,8 @@ np.random.seed(0)
 
 class MLP:
     def __init__(self, inputs, inputs_labels, input_validation=None, input_validation_labels=None, num_iterations=20,
-                 binary=True,
-                 learning_rate=0.01, alpha=0.9, num_nodes_hidden_layer=5, num_output_layers=1, batch_train=True,
-                 verbose=False):
+                 binary=True, learning_rate=0.01, alpha=0.5, num_nodes_hidden_layer=5,
+                 num_output_layers=1, batch_train=True, verbose=False):
 
         self.original_inputs = inputs
         self.inputs_labels = inputs_labels
@@ -37,6 +36,7 @@ class MLP:
         self.verbose = verbose
         self.binary = binary
         self.mse = np.zeros(num_iterations)
+        self.validation_mse = np.zeros(num_iterations)
 
     def initialize_weights(self, num_of_nodes_in_layer, num_of_inputs_in_neuron):
         # Need to add one one weight for bias term
@@ -56,7 +56,7 @@ class MLP:
         self.delta_weights_2 = 0
 
         for epoch in range(self.num_iterations):
-
+            self.epoch = epoch
             if self.batch_train is False:
                 self.inputs_with_bias, self.inputs_labels = shuffle(self.inputs_with_bias.T, self.inputs_labels)
                 self.inputs_with_bias = self.inputs_with_bias.T
@@ -74,7 +74,6 @@ class MLP:
                 if self.batch_train:
                     break
 
-
             o_out = self.forward_pass(self.inputs_with_bias)[1]
 
             if self.binary is False and epoch % 50 == 0:
@@ -85,7 +84,11 @@ class MLP:
                 Z = np.reshape(o_out, (num_data, num_data))
                 Utils.plot_3d_data(X, Y, Z)
 
-            self.mse[epoch] = self.evaluate(o_out)
+            self.mse[epoch] = self.evaluate(o_out, self.inputs_labels)[1]
+
+            if self.input_validation_with_bias is not None:
+                validation_pred = self.forward_pass(self.input_validation_with_bias)[1]
+                self.validation_mse[epoch] = self.evaluate(validation_pred, self.input_validation_labels)[1]
 
             # # Make a prediction on training data with the current weights
             # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
@@ -99,23 +102,21 @@ class MLP:
 
         if test_input.shape[0] != self.inputs_with_bias.shape[0]:
             if np.ndim(test_input) == 1:
-                test_input = np.reshape(test_input, (test_input.shape[0],1))
+                test_input = np.reshape(test_input, (test_input.shape[0], 1))
             test_input = np.vstack((test_input, np.ones(test_input.shape[1])))
 
         o_out = self.forward_pass(test_input)[1]
 
         return o_out
 
-    def evaluate(self, o_out):
+    def evaluate(self, o_out, labels):
 
-        [loss, mse] = Utils.compute_error(self.inputs_labels, o_out, self.binary)
-        #
-        # self.mse[epoch] = mse
+        [loss, mse] = Utils.compute_error(labels, o_out, self.binary)
 
         if self.verbose:
-            print('epoch {0} produced misclassification rate {1} and mse {2}'.format(epoch, loss, mse))
+            print('epoch {0} produced misclassification rate {1} and mse {2}'.format(self.epoch, loss, mse))
 
-        return mse
+        return [loss, mse]
 
     def _fetch_data(self, index):
 
@@ -176,28 +177,22 @@ class MLP:
         self.weights_layer_2 += self.delta_weights_2.T * self.learning_rate
 
 
-
 if __name__ == "__main__":
+
     percent_split = 0.2
-    use_validation_set = False
+    use_validation_set = True
+    num_iterations = 100
+    learning_rate = 0.001
+    num_hidden_nodes_layer_1 = 20
+    verbose = False
+
     [inputs, inputs_labels, input_validation, input_validation_labels] = Utils.create_non_linearly_separable_data(
         use_validation_set=use_validation_set,
         percent_split=percent_split)
 
     # Utils.plot_initial_data(inputs.T, inputs_labels)
 
-    num_hidden_nodes_layer_1 = 20
-    num_iterations = 20
-    learning_rate = 0.001
-    verbose = False
 
-    mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
-                    input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
-                    num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True, verbose=verbose)
-
-    [_, _, mse_batch] = mlp_batch.fit()
-
-    Utils.plot_decision_boundary_mlp(inputs,inputs_labels, mlp_batch)
 
     mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                   input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
@@ -205,6 +200,13 @@ if __name__ == "__main__":
 
     [_, _, mse_seq] = mlp_seq.fit()
 
-    mse = [mse_seq, mse_batch]
-    legend_names = ['sequential error', 'batch error']
-    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations, title='')
+    train_mse = mlp_seq.mse
+    val_mse = mlp_seq.validation_mse
+
+
+    # Utils.plot_decision_boundary_mlp(inputs,inputs_labels, mlp_seq)
+
+
+    mse = [train_mse, val_mse]
+    legend_names = ['train_mse error', 'batch val_mse']
+    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations, title='MLP with learning rate ')

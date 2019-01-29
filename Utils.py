@@ -31,7 +31,72 @@ def create_linearly_separable_data():
     return [X, Y]
 
 
-def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2):
+def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, percent_split=0.2):
+    mA = [1.0, 0.3]
+    mB = [0.0, -0.1]
+
+    sigmaA = 0.2
+    sigmaB = 0.3
+
+    classA = np.hstack(
+        [np.random.randn(1, int(ndata / 2)) * sigmaA - mA[0], np.random.randn(1, int(ndata / 2)) * sigmaA + mA[0]])
+    classA = np.vstack([classA, np.random.randn(1, ndata) * sigmaA + mA[1]])
+
+    classB = np.random.randn(1, ndata) * sigmaB + mB[0]
+    classB = np.vstack([classB, np.random.randn(1, ndata) * sigmaB + mB[1]])
+
+    labelsA = -np.ones((np.shape(classA)[1], 1))
+    labelsB = np.ones((np.shape(classB)[1], 1))
+
+    X = np.concatenate((classA, classB), axis=1)
+    Y = np.concatenate((labelsA, labelsB))
+
+    [inputs, inputs_labels] = shuffle(X.T, Y)
+
+    if use_validation_set:
+        [inputs, input_validation, inputs_labels, input_validation_labels] = \
+            train_test_split(X, Y, test_size=percent_split, random_state=42)
+
+        return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
+
+    return [inputs.T, inputs_labels, None, None]
+
+
+def remove_percent_of_data(dataset, labels, percent = 0.25):
+
+    keep_data = 1-percent
+
+    [dataset, labels] = shuffle(dataset,labels)
+    inputs = dataset[0:round(len(dataset) * keep_data)]
+    inputs_labels = labels[0:round(len(dataset) * keep_data)]
+
+    input_validation = dataset[round(len(dataset) * keep_data):]
+    input_validation_labels = labels[round(len(dataset) * keep_data):]
+
+    return [inputs, input_validation, inputs_labels, input_validation_labels]
+
+
+
+def reduce_20_80(dataset, labelset):
+    big = dataset[dataset[:, 1] > 0]
+    small = dataset[dataset[:, 1] < 0]
+
+    big = shuffle(big)
+    big = big[0:round(len(big) * 0.8)]
+
+    small = shuffle(small)
+    small = small[0:round(len(small) * 0.2)]
+    small = shuffle(np.concatenate((small, big)))
+
+    labelset = shuffle(labelset)
+    labelset = labelset[0:len(small)]
+
+    return [small, labelset]
+
+
+# case 1 is random 25% from each class
+# case 2 random 50% from classA
+def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2, case=1):
     meanA = [1, 0.5]
     meanB = [-0.5, -1]
 
@@ -43,16 +108,51 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_
     classB = np.random.multivariate_normal(meanB, sigmaB, n)
     labelsB = np.ones((classB.shape[0], 1))
 
+
+
+
+    if use_validation_set:
+        if case == 1:
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                remove_percent_of_data(classA, labelsA , percent=0.25)
+
+            [inputsB, input_validationB, inputs_labelsB, input_validation_labelsB] = \
+                remove_percent_of_data(classB, labelsB, percent=0.25)
+
+            inputs = np.concatenate((inputsA, inputsB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, inputs_labelsB))
+
+            input_validation = np.concatenate((input_validationA, input_validationB), axis=0)
+            input_validation_labels = np.concatenate((input_validation_labelsA, input_validation_labelsB))
+
+        elif case == 2:
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                remove_percent_of_data(classA, labelsA, percent=0.5)
+
+            inputs = np.concatenate((inputsA, classB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, labelsB))
+
+            input_validation = input_validationA
+            input_validation_labels = input_validation_labelsA
+
+        elif case == 3:
+            [inputsB, input_validationB, inputs_labelsB, input_validation_labelsB] = \
+                remove_percent_of_data(classB, labelsB, percent=0.5)
+
+            inputs = np.concatenate((classA, inputsB), axis=0)
+            inputs_labels = np.concatenate((labelsA, inputs_labelsB))
+
+            input_validation = input_validationB
+            input_validation_labels = input_validation_labelsB
+
+
+
+        return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
+
     X = np.concatenate((classA, classB), axis=0)
     Y = np.concatenate((labelsA, labelsB))
 
     [inputs, inputs_labels] = shuffle(X, Y)
-
-    if use_validation_set:
-        [inputs, input_validation, inputs_labels, input_validation_labels] = \
-            train_test_split(X, Y, test_size=percent_split, random_state=42)
-
-        return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
 
     return [inputs.T, inputs_labels, None, None]
 
@@ -74,7 +174,7 @@ def compute_error(targets, predictions, binary):
         predictions = np.where(predictions >= 0, 1, -1)
         loss = zero_one_loss(targets, predictions, normalize=True)
 
-    return loss * 100, mse
+    return loss, mse
 
 
 def plot_initial_data(inputs, targets):
@@ -88,8 +188,8 @@ def plot_initial_data(inputs, targets):
     plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=15)
     plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=15)
 
-    plt.ylim(-10, 10)
-    plt.xlim(-6, 6)
+    # plt.ylim(-10, 10)
+    # plt.xlim(-6, 6)
 
     plt.show()
 
@@ -106,6 +206,29 @@ def plot_error(error, legend_names, num_epochs, title):
 
     for i in range(len(error)):
         plt.plot(epochs, error[i][:])
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Error (mse)')
+
+    plt.title(title)
+    plt.legend(legend_names, loc='upper right')
+
+    plt.show()
+
+
+def plot_error_hidden_nodes(error, legend_names, hidden_nodes, title, loss):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    plt.ylim(0, 2)
+    # plt.xlim(-0.5, num_epochs)
+
+    plt.plot(hidden_nodes, error)
+    plt.plot(hidden_nodes, loss)
+
+    plt.xlabel('Nodes in hidden layer')
+    plt.ylabel('Error')
 
     plt.title(title)
     plt.legend(legend_names, loc='upper right')
@@ -141,8 +264,8 @@ def plot_glass_data(pred, y_test, title):
     epochs = np.arange(0, len(pred), 1)
 
     plt.title(title)
-    plt.plot(epochs, pred, color='r',label='Prediction')
-    plt.plot(epochs, y_test, color = 'b',label='Actual data')
+    plt.plot(epochs, pred, color='r', label='Prediction')
+    plt.plot(epochs, y_test, color='b', label='Actual data')
     plt.legend()
     plt.show()
 
@@ -181,8 +304,7 @@ def plot_Perceptron(inputs, targets, weights, title):
     plt.pause(interval=.1)
 
 
-
-def plot_decision_boundary_mlp(data,targets, mlp):
+def plot_decision_boundary_mlp(data, targets, mlp):
     # Set min and max values and give it some padding
     x_min, x_max = data[0, :].min() - .5, data[0, :].max() + .5
     y_min, y_max = data[1, :].min() - .5, data[1, :].max() + .5
@@ -199,7 +321,7 @@ def plot_decision_boundary_mlp(data,targets, mlp):
 
     boundary = [mlp.predict(sample) for sample in samples]
 
-    boundary = np.reshape(boundary,(xx.shape))
+    boundary = np.reshape(boundary, (xx.shape))
 
     # Plot the contour and training examples
     plt.contourf(xx, yy, boundary, cmap=plt.cm.Spectral)
@@ -208,20 +330,3 @@ def plot_decision_boundary_mlp(data,targets, mlp):
     plt.scatter(data[0, idx2,], data[1, idx2], s=15, cmap=plt.cm.Spectral)
 
     plt.show()
-
-    # x = np.arange(-2, 6, 0.02)
-    # x_axis, y_axis = np.meshgrid(x, x)
-    # x_axis = x_axis.ravel()
-    # y_axis = y_axis.ravel()
-    # samples = np.vstack([x_axis, y_axis]).T
-    # for c in np.unique(self.targets):
-    #     plt.scatter(self.inputs[np.where(c == self.targets), 0], self.inputs[np.where(c == self.targets), 1])
-    # boundary = [self.predict_MLP(sample) for sample in samples]
-    # boundary = np.asarray(boundary)
-    # boundary = boundary.reshape(len(x), len(x))
-    # plt.contour(x, x, boundary, cmap=cm.binary, alpha=0.5)  # cmap=cm.jet
-    # plt.xlim(right=6)
-    # plt.xlim(left=-2)
-    # plt.ylim(top=6)
-    # plt.ylim(bottom=-2)
-    # plt.show()
