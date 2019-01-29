@@ -78,24 +78,35 @@ def remove_percent_of_data(dataset, labels, percent = 0.25):
 
 
 def reduce_20_80(dataset, labelset):
-    big = dataset[dataset[:, 1] > 0]
-    small = dataset[dataset[:, 1] < 0]
+    dataset, labelset = shuffle(dataset,labelset)
 
-    big = shuffle(big)
-    big = big[0:round(len(big) * 0.8)]
 
-    small = shuffle(small)
-    small = small[0:round(len(small) * 0.2)]
-    small = shuffle(np.concatenate((small, big)))
+    ind_train = np.argwhere(dataset[:, 0] > 0)
+    ind_test = np.argwhere(dataset[:, 0] < 0)
 
-    labelset = shuffle(labelset)
-    labelset = labelset[0:len(small)]
+    ind_train = ind_train[0:round(len(ind_train) * 0.8)]
+    ind_test = ind_test[0:round(len(ind_test) * 0.2)]
 
-    return [small, labelset]
+    inputs = dataset[ind_train]
+
+    input_validation = dataset[ind_test]
+
+    input_validation_labels = labelset[ind_test]
+    inputs_labels = labelset[ind_train]
+
+    inputs = np.reshape(inputs, (len(inputs), 2))
+    input_validation = np.reshape(input_validation, (len(input_validation), 2))
+    input_validation_labels = np.reshape(input_validation_labels, (len(input_validation_labels), 1))
+    inputs_labels = np.reshape(inputs_labels, (len(inputs_labels), 1))
+
+    return [inputs, input_validation, inputs_labels, input_validation_labels]
+
 
 
 # case 1 is random 25% from each class
 # case 2 random 50% from classA
+# case 3 random 50% from classB
+# case 4 20% from a subset of classA for which classA(1,:)<0 and 80% from a subset of classA for which classA(1,:)>0
 def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2, case=1):
     meanA = [1, 0.5]
     meanB = [-0.5, -1]
@@ -107,9 +118,6 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_
     labelsA = -np.ones((classA.shape[0], 1))
     classB = np.random.multivariate_normal(meanB, sigmaB, n)
     labelsB = np.ones((classB.shape[0], 1))
-
-
-
 
     if use_validation_set:
         if case == 1:
@@ -144,8 +152,16 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_
 
             input_validation = input_validationB
             input_validation_labels = input_validation_labelsB
+        elif case == 4:
 
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                reduce_20_80(classA, labelsA)
 
+            inputs = np.concatenate((inputsA, classB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, labelsB))
+
+            input_validation = input_validationA
+            input_validation_labels = input_validation_labelsA
 
         return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
 

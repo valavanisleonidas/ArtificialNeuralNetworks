@@ -41,7 +41,7 @@ def run_hidden_nodes_mse_plot_experiment():
 def experiment_train_validation():
     percent_split = 0.2
     use_validation_set = True
-    case = 3
+    case = 4
 
     [inputs, inputs_labels, input_validation, input_validation_labels] = Utils.create_non_linearly_separable_data(
         use_validation_set=use_validation_set,
