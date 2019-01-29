@@ -64,9 +64,9 @@ def experiment_train_validation_error():
 
         mse = [train_mse, val_mse]
         legend_names = ['train mse error', 'validation mse error']
-        Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations,
-                         title='MLP with lr = {0}, iterations = {1} , hidden nodes = {2} '
-                         .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
+        Utils.plot_error_with_epochs(mse, legend_names=legend_names, num_epochs=num_iterations,
+                                     title='MLP with lr = {0}, iterations = {1} , hidden nodes = {2} '
+                                     .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
 
 
 def experiment_train_validation_nodes():
@@ -138,9 +138,9 @@ def experiment_train_val_seq_batch_mlp():
 
     mse = [train_batch_mse_batch, train_seq_mse_batch, eval_batch_mse_batch, eval_seq_mse_batch]
     legend_names = ['train batch', 'train seq', 'eval batch', 'eval seq']
-    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations,
-                     title='MLP with lr = {0}, iterations = {1} , hidden nodes = {2} '
-                     .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
+    Utils.plot_error_with_epochs(mse, legend_names=legend_names, num_epochs=num_iterations,
+                                 title='MLP with lr = {0}, iterations = {1} , hidden nodes = {2} '
+                                 .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
 
 
 if __name__ == "__main__":

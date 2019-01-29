@@ -1,9 +1,7 @@
 import numpy as np
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
-from sklearn.metrics import mean_squared_error, zero_one_loss, accuracy_score
-from mpl_toolkits.mplot3d import Axes3D
+from sklearn.metrics import mean_squared_error, zero_one_loss
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
@@ -27,7 +25,6 @@ def create_linearly_separable_data():
     X = np.concatenate((classA, classB), axis=0)
     Y = np.concatenate((labelsA, labelsB))
 
-    # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
     return [X, Y]
 
 
@@ -52,7 +49,6 @@ def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, ca
     classB = classB.T
 
     if use_validation_set:
-
 
         if case == 1:
             [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
@@ -96,6 +92,8 @@ def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, ca
 
             input_validation = input_validationA
             input_validation_labels = input_validation_labelsA
+        else:
+            raise Exception("cannot find given case")
 
         return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
 
@@ -105,7 +103,6 @@ def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, ca
     [inputs, inputs_labels] = shuffle(X, Y)
 
     return [inputs.T, inputs_labels, None, None]
-
 
 
 def remove_percent_of_data(dataset, labels, percent=0.25):
@@ -204,6 +201,8 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, case=1):
 
             input_validation = input_validationA
             input_validation_labels = input_validation_labelsA
+        else:
+            raise Exception("cannot find given case")
 
         return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
 
@@ -252,7 +251,7 @@ def plot_initial_data(inputs, targets):
     plt.show()
 
 
-def plot_error(error, legend_names, num_epochs, title):
+def plot_error_with_epochs(error, legend_names, num_epochs, title):
     # fig config
     plt.figure()
     plt.grid(True)

@@ -91,12 +91,6 @@ class MLP:
                 validation_pred = self.forward_pass(self.input_validation_with_bias)[1]
                 self.validation_mse[epoch] = self.evaluate(validation_pred, self.input_validation_labels)[1]
 
-            # # Make a prediction on training data with the current weights
-            # _, predictions = self.forward_pass(self.inputs_with_bias, weights_layer_1, weights_layer_2)
-            # [loss, mse] = Utils.compute_error(self.inputs_labels, predictions)
-            #
-            # print('after epoch {0} produced loss {1} and mse {1}'.format(epoch, loss, mse))
-
         return [self.weights_layer_1, self.weights_layer_2, self.mse]
 
     def predict(self, test_input):
@@ -203,4 +197,4 @@ if __name__ == "__main__":
 
     mse = [train_mse, val_mse]
     legend_names = ['train_mse error', 'batch val_mse']
-    Utils.plot_error(mse, legend_names=legend_names, num_epochs=num_iterations, title='MLP with learning rate ')
+    Utils.plot_error_with_epochs(mse, legend_names=legend_names, num_epochs=num_iterations, title='MLP with learning rate ')

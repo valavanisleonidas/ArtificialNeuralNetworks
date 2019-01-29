@@ -146,7 +146,7 @@ if __name__ == "__main__":
         title = 'Perceptron learning'
     else:
         title = 'Delta Rule'
-    Utils.plot_error(error, legend_names, n_epochs,title)
+    Utils.plot_error_with_epochs(error, legend_names, n_epochs, title)
 
 
 
@@ -161,6 +161,6 @@ if __name__ == "__main__":
         [_, error_seq] = seq.train()
         learning_rates.append(error_seq)
 
-    Utils.plot_error(learning_rates, lea_rate, n_epochs,title)
+    Utils.plot_error_with_epochs(learning_rates, lea_rate, n_epochs, title)
 
 
