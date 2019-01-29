@@ -31,7 +31,7 @@ def create_linearly_separable_data():
     return [X, Y]
 
 
-def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, percent_split=0.2):
+def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, case=1):
     mA = [1.0, 0.3]
     mB = [0.0, -0.1]
 
@@ -48,25 +48,70 @@ def create_non_linearly_separable_data_2(ndata=100, use_validation_set=False, pe
     labelsA = -np.ones((np.shape(classA)[1], 1))
     labelsB = np.ones((np.shape(classB)[1], 1))
 
-    X = np.concatenate((classA, classB), axis=1)
-    Y = np.concatenate((labelsA, labelsB))
-
-    [inputs, inputs_labels] = shuffle(X.T, Y)
+    classA = classA.T
+    classB = classB.T
 
     if use_validation_set:
-        [inputs, input_validation, inputs_labels, input_validation_labels] = \
-            train_test_split(X, Y, test_size=percent_split, random_state=42)
+
+
+        if case == 1:
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                remove_percent_of_data(classA, labelsA, percent=0.25)
+
+            [inputsB, input_validationB, inputs_labelsB, input_validation_labelsB] = \
+                remove_percent_of_data(classB, labelsB, percent=0.25)
+
+            inputs = np.concatenate((inputsA, inputsB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, inputs_labelsB))
+
+            input_validation = np.concatenate((input_validationA, input_validationB), axis=0)
+            input_validation_labels = np.concatenate((input_validation_labelsA, input_validation_labelsB))
+
+        elif case == 2:
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                remove_percent_of_data(classA, labelsA, percent=0.5)
+
+            inputs = np.concatenate((inputsA, classB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, labelsB))
+
+            input_validation = input_validationA
+            input_validation_labels = input_validation_labelsA
+
+        elif case == 3:
+            [inputsB, input_validationB, inputs_labelsB, input_validation_labelsB] = \
+                remove_percent_of_data(classB, labelsB, percent=0.5)
+
+            inputs = np.concatenate((classA, inputsB), axis=0)
+            inputs_labels = np.concatenate((labelsA, inputs_labelsB))
+
+            input_validation = input_validationB
+            input_validation_labels = input_validation_labelsB
+        elif case == 4:
+
+            [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
+                reduce_20_80(classA, labelsA)
+
+            inputs = np.concatenate((inputsA, classB), axis=0)
+            inputs_labels = np.concatenate((inputs_labelsA, labelsB))
+
+            input_validation = input_validationA
+            input_validation_labels = input_validation_labelsA
 
         return [inputs.T, inputs_labels, input_validation.T, input_validation_labels]
+
+    X = np.concatenate((classA, classB), axis=0)
+    Y = np.concatenate((labelsA, labelsB))
+
+    [inputs, inputs_labels] = shuffle(X, Y)
 
     return [inputs.T, inputs_labels, None, None]
 
 
-def remove_percent_of_data(dataset, labels, percent = 0.25):
 
-    keep_data = 1-percent
+def remove_percent_of_data(dataset, labels, percent=0.25):
+    keep_data = 1 - percent
 
-    [dataset, labels] = shuffle(dataset,labels)
+    [dataset, labels] = shuffle(dataset, labels)
     inputs = dataset[0:round(len(dataset) * keep_data)]
     inputs_labels = labels[0:round(len(dataset) * keep_data)]
 
@@ -76,10 +121,8 @@ def remove_percent_of_data(dataset, labels, percent = 0.25):
     return [inputs, input_validation, inputs_labels, input_validation_labels]
 
 
-
 def reduce_20_80(dataset, labelset):
-    dataset, labelset = shuffle(dataset,labelset)
-
+    dataset, labelset = shuffle(dataset, labelset)
 
     ind_train = np.argwhere(dataset[:, 0] > 0)
     ind_test = np.argwhere(dataset[:, 0] < 0)
@@ -102,12 +145,11 @@ def reduce_20_80(dataset, labelset):
     return [inputs, input_validation, inputs_labels, input_validation_labels]
 
 
-
 # case 1 is random 25% from each class
 # case 2 random 50% from classA
 # case 3 random 50% from classB
 # case 4 20% from a subset of classA for which classA(1,:)<0 and 80% from a subset of classA for which classA(1,:)>0
-def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_split=0.2, case=1):
+def create_non_linearly_separable_data(n=100, use_validation_set=False, case=1):
     meanA = [1, 0.5]
     meanB = [-0.5, -1]
 
@@ -122,7 +164,7 @@ def create_non_linearly_separable_data(n=100, use_validation_set=False, percent_
     if use_validation_set:
         if case == 1:
             [inputsA, input_validationA, inputs_labelsA, input_validation_labelsA] = \
-                remove_percent_of_data(classA, labelsA , percent=0.25)
+                remove_percent_of_data(classA, labelsA, percent=0.25)
 
             [inputsB, input_validationB, inputs_labelsB, input_validation_labelsB] = \
                 remove_percent_of_data(classB, labelsB, percent=0.25)
@@ -237,7 +279,7 @@ def plot_error_hidden_nodes(error, legend_names, hidden_nodes, title, loss):
     plt.figure()
     plt.grid(True)
 
-    plt.ylim(0, 2)
+    # plt.ylim(0, 2)
     # plt.xlim(-0.5, num_epochs)
 
     plt.plot(hidden_nodes, error)

@@ -29,6 +29,7 @@ class MLP:
 
         self.inputs_with_bias = np.vstack((inputs, np.ones(inputs.shape[1])))
 
+        self.input_validation_with_bias = None
         if input_validation_labels is not None:
             self.input_validation_with_bias = np.vstack(
                 (self.input_validation, np.ones(self.input_validation.shape[1])))
@@ -178,8 +179,6 @@ class MLP:
 
 
 if __name__ == "__main__":
-
-    percent_split = 0.2
     use_validation_set = True
     num_iterations = 100
     learning_rate = 0.001
@@ -187,12 +186,9 @@ if __name__ == "__main__":
     verbose = False
 
     [inputs, inputs_labels, input_validation, input_validation_labels] = Utils.create_non_linearly_separable_data(
-        use_validation_set=use_validation_set,
-        percent_split=percent_split)
+        use_validation_set=use_validation_set)
 
     # Utils.plot_initial_data(inputs.T, inputs_labels)
-
-
 
     mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                   input_validation_labels=input_validation_labels, num_nodes_hidden_layer=num_hidden_nodes_layer_1,
@@ -203,9 +199,7 @@ if __name__ == "__main__":
     train_mse = mlp_seq.mse
     val_mse = mlp_seq.validation_mse
 
-
     # Utils.plot_decision_boundary_mlp(inputs,inputs_labels, mlp_seq)
-
 
     mse = [train_mse, val_mse]
     legend_names = ['train_mse error', 'batch val_mse']
