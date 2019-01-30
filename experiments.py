@@ -20,7 +20,7 @@ def run_hidden_nodes_mse_plot_experiment():
     verbose = True
 
     nodes = [1, 5, 10, 20, 30, 40, 50, 70, 80, 90, 100, 200, 250]
-    nodes = np.arange(1,50,1)
+    nodes = np.arange(1, 50, 1)
     losses = []
     mses = []
     for node in nodes:
@@ -60,8 +60,6 @@ def experiment_train_validation_error():
 
         # Utils.plot_initial_data(inputs.T, inputs_labels)
 
-
-
         mlp_batch = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                         input_validation_labels=input_validation_labels,
                         num_nodes_hidden_layer=num_hidden_nodes_layer_1,
@@ -72,10 +70,9 @@ def experiment_train_validation_error():
         mse.append(mlp_batch.mse)
         mse.append(mlp_batch.validation_mse)
 
-
-    legend_names = ['train mse error case 1','validation mse error case 1',
+    legend_names = ['train mse error case 1', 'validation mse error case 1',
                     'train mse error case 2', 'validation mse error case 2',
-                     'train mse error case 3', 'validation mse error case 3',
+                    'train mse error case 3', 'validation mse error case 3',
                     'train mse error case 4', 'validation mse error case 4']
 
     Utils.plot_error_with_epochs(mse, legend_names=legend_names, num_epochs=num_iterations,
@@ -83,10 +80,8 @@ def experiment_train_validation_error():
                                  .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
 
 
-
 def experiment_learning_curves_error():
     train_test = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-
 
     use_validation_set = True
     num_hidden_nodes_layer_1 = 20
@@ -106,14 +101,14 @@ def experiment_learning_curves_error():
         current_train = []
         current_validation = []
         for check in train_test:
-
-            X_train, X_test, y_train, y_test = train_test_split(inputs.T, inputs_labels, test_size=check, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(inputs.T, inputs_labels, test_size=check,
+                                                                random_state=42)
 
             mlp_batch = MLP(inputs=X_train.T, inputs_labels=y_train, input_validation=input_validation,
-                                input_validation_labels=input_validation_labels,
-                                num_nodes_hidden_layer=num_hidden_nodes_layer_1,
-                                num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True,
-                                verbose=verbose)
+                            input_validation_labels=input_validation_labels,
+                            num_nodes_hidden_layer=num_hidden_nodes_layer_1,
+                            num_iterations=num_iterations, learning_rate=learning_rate, batch_train=True,
+                            verbose=verbose)
 
             [_, _, mse_batch] = mlp_batch.fit()
 
@@ -123,15 +118,14 @@ def experiment_learning_curves_error():
         train_MSE.append(current_train)
         val_MSE.append(current_validation)
 
-
     legend_names = ['train mse error case 1', 'train mse error case 2',
                     'train mse error case 3', 'train mse error case 4',
                     'validation mse error case 1', 'validation mse error case 2',
                     'validation mse error case 3', 'validation mse error case 4']
 
     Utils.plot_learning_curves(train_MSE, legend_names=legend_names, train_size=train_test,
-                                  title='Learning curve with lr = {0}, iterations = {1} '
-                                  .format(learning_rate, num_iterations), loss=val_MSE)
+                               title='Learning curve with lr = {0}, iterations = {1} '
+                               .format(learning_rate, num_iterations), loss=val_MSE)
 
 
 def experiment_train_validation_nodes():
@@ -170,12 +164,12 @@ def experiment_train_validation_nodes():
 
     legend_names = ['train mse error case 1', 'train mse error case 2',
                     'train mse error case 3', 'train mse error case 4',
-                    'validation mse error case 1','validation mse error case 2',
+                    'validation mse error case 1', 'validation mse error case 2',
                     'validation mse error case 3', 'validation mse error case 4']
 
     Utils.plot_error_hidden_nodes(train_MSE, legend_names=legend_names, hidden_nodes=nodes,
                                   title='MLP with learning rate {0}, iterations {1} '
-                                  .format(learning_rate, num_iterations),loss=val_MSE)
+                                  .format(learning_rate, num_iterations), loss=val_MSE)
 
 
 def experiment_train_val_seq_batch_mlp():
@@ -199,10 +193,9 @@ def experiment_train_val_seq_batch_mlp():
     train_batch_mse_batch = mlp_batch.mse
     eval_batch_mse_batch = mlp_batch.validation_mse
 
-
     Utils.plot_decision_boundary_mlp(inputs, inputs_labels, mlp_batch,
                                      'MLP with learning rate {0}, iterations {1} , num hidden nodes {2}'
-                                     .format(learning_rate,num_iterations,num_hidden_nodes_layer_1))
+                                     .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
 
     mlp_seq = MLP(inputs=inputs, inputs_labels=inputs_labels, input_validation=input_validation,
                   input_validation_labels=input_validation_labels,
@@ -218,7 +211,6 @@ def experiment_train_val_seq_batch_mlp():
     Utils.plot_error_with_epochs(mse, legend_names=legend_names, num_epochs=num_iterations,
                                  title='MLP with lr = {0}, iterations = {1} , hidden nodes = {2} '
                                  .format(learning_rate, num_iterations, num_hidden_nodes_layer_1))
-
 
 
 def experiment_perceptron_delta():
@@ -238,13 +230,13 @@ def experiment_perceptron_delta():
                        batch_train=True, perceptron_learning=False)
     [weights_delta, _] = delta.train()
 
-
     Utils.plot_Perceptron_Delta(X, Y, weights_delta=weights_delta, weights_perceptron=weights_perceptron,
-                                title="Batch Perceptron with epochs = {0}".format(str(n_epochs)) )
+                                title="Batch Perceptron with lr ={0}, epochs = {1}".format(learning_rate,
+                                                                                           str(n_epochs)))
 
 
 if __name__ == "__main__":
-    # run_hidden_nodes_mse_plot_experiment()
+    run_hidden_nodes_mse_plot_experiment()
 
     # experiment_train_validation_error()
 

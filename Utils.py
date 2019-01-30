@@ -250,16 +250,38 @@ def plot_initial_data(inputs, targets):
 
     plt.show()
 
+def plot_nn_with_nodes(error, legend_names, num_epochs, title):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    # plt.ylim(0, 0.04)
+    plt.xlim(0, len(num_epochs))
+
+    # epochs = np.arange(0, num_epochs, 1)
+
+    for i in range(len(error)):
+        plt.plot(num_epochs, error[i][:])
+
+    plt.xlabel('Number of nodes')
+    plt.ylabel('Error (mse)')
+
+    plt.title(title)
+    plt.legend(legend_names, loc='upper right')
+
+    plt.show()
+
+
 
 def plot_error_with_epochs(error, legend_names, num_epochs, title):
     # fig config
     plt.figure()
     plt.grid(True)
 
-    plt.ylim(0, 4)
+    # plt.ylim(0, 4)
     plt.xlim(-0.5, num_epochs)
 
-    epochs = np.arange(0, num_epochs, 1)
+    epochs = np.arange(0, len(error[0]), 1)
 
     for i in range(len(error)):
         plt.plot(epochs, error[i][:])
@@ -268,8 +290,6 @@ def plot_error_with_epochs(error, legend_names, num_epochs, title):
     plt.ylabel('Error (mse)')
 
     plt.title(title)
-    plt.legend(legend_names, loc='upper right')
-
     plt.show()
 
 
