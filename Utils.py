@@ -256,7 +256,7 @@ def plot_error_with_epochs(error, legend_names, num_epochs, title):
     plt.figure()
     plt.grid(True)
 
-    plt.ylim(0, 10)
+    plt.ylim(0, 4)
     plt.xlim(-0.5, num_epochs)
 
     epochs = np.arange(0, num_epochs, 1)
@@ -273,6 +273,28 @@ def plot_error_with_epochs(error, legend_names, num_epochs, title):
     plt.show()
 
 
+def plot_learning_curves(error, legend_names, train_size, title, loss):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+
+    for i in range(len(error)):
+        plt.plot(train_size, error[i][:])
+
+    for i in range(len(error)):
+        plt.plot(train_size, loss[i][:])
+
+
+    plt.xlabel('Training percentage')
+    plt.ylabel('Error')
+
+    plt.title(title)
+    plt.legend(legend_names, loc='upper right')
+
+    plt.show()
+
+
 def plot_error_hidden_nodes(error, legend_names, hidden_nodes, title, loss):
     # fig config
     plt.figure()
@@ -281,8 +303,14 @@ def plot_error_hidden_nodes(error, legend_names, hidden_nodes, title, loss):
     # plt.ylim(0, 2)
     # plt.xlim(-0.5, num_epochs)
 
-    plt.plot(hidden_nodes, error)
-    plt.plot(hidden_nodes, loss)
+    for i in range(len(error)):
+        plt.plot(hidden_nodes, error[i][:])
+
+    for i in range(len(error)):
+        plt.plot(hidden_nodes, loss[i][:])
+
+    # plt.plot(hidden_nodes, error)
+    # plt.plot(hidden_nodes, loss)
 
     plt.xlabel('Nodes in hidden layer')
     plt.ylabel('Error')
@@ -314,7 +342,7 @@ def plot_3d_data(X, Y, Z, pause=True):
         plt.show()
 
 
-def plot_glass_data(pred, y_test, title):
+def plot_glass_data_prediction(pred, y_test, title):
     # fig config
     fig = plt.figure()
     plt.grid(True)
@@ -361,11 +389,55 @@ def plot_Perceptron(inputs, targets, weights, title):
     plt.pause(interval=.1)
 
 
-def plot_decision_boundary_mlp(data, targets, mlp):
+def plot_Perceptron_Delta(inputs, targets, weights_perceptron, weights_delta, title):
+    # fig config
+    plt.figure()
+    plt.grid(True)
+
+    idx1 = np.where(targets == -1)[0]
+    idx2 = np.where(targets == 1)[0]
+
+    plt.scatter(inputs[idx1, 0], inputs[idx1, 1], s=10)
+    plt.scatter(inputs[idx2, 0], inputs[idx2, 1], s=10)
+
+    plt.title(title)
+
+    plt.ylim(-10, 10)
+    plt.xlim(-6, 6)
+
+    xx = np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1]))
+    slope = -(weights_perceptron[2] / weights_perceptron[1]) / (weights_perceptron[2] / weights_perceptron[0])
+    intercept = -weights_perceptron[2] / weights_perceptron[1]
+
+    # y =mx+c, m is slope and c is intercept
+    y = (slope * xx) + intercept
+
+    plt.plot(xx, y, 'y')
+
+
+
+    # weight --------------
+
+    xx = np.linspace(np.amin(inputs[:, :1]), np.amax(inputs[:, :1]))
+    slope = -(weights_delta[2] / weights_delta[1]) / (weights_delta[2] / weights_delta[0])
+    intercept = -weights_delta[2] / weights_delta[1]
+
+    # y =mx+c, m is slope and c is intercept
+    y = (slope * xx) + intercept
+
+    plt.plot(xx, y, 'c')
+
+    plt.legend(['Perceptron' , 'Delta'], loc='upper right')
+
+    plt.show()
+
+
+
+def plot_decision_boundary_mlp(data, targets, mlp, title):
     # Set min and max values and give it some padding
     x_min, x_max = data[0, :].min() - .5, data[0, :].max() + .5
     y_min, y_max = data[1, :].min() - .5, data[1, :].max() + .5
-    h = 0.01
+    h = 0.02
     # Generate a grid of points with distance h between them
     xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
@@ -386,4 +458,5 @@ def plot_decision_boundary_mlp(data, targets, mlp):
     plt.scatter(data[0, idx1], data[1, idx1], s=15, cmap=plt.cm.Spectral)
     plt.scatter(data[0, idx2,], data[1, idx2], s=15, cmap=plt.cm.Spectral)
 
+    plt.title(title)
     plt.show()

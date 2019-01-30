@@ -5,11 +5,11 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation
 from keras import regularizers
 from keras import backend as K
-from keras.optimizers import *
+import keras.optimizers as optimizers
 from keras.regularizers import *
 import numpy as np
 from keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau
-
+import csv
 import Utils
 
 np.random.seed(0)
@@ -32,6 +32,14 @@ def mackey_glass_time_series(length, noise=0):
     return x
 
 
+def write_to_Csv(dictionary):
+    with open('parameters.csv', 'a', newline='') as csvfile:
+        fieldnames = dictionary.keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        # writer.writeheader()
+        writer.writerow(dictionary)
+
+
 def create_mackey_glass_dataset(times, noise=0):
     start = 301
     end = 1501
@@ -49,26 +57,10 @@ def create_mackey_glass_dataset(times, noise=0):
     return np.array(inputs), output.reshape(output.shape[0], 1), sequence
 
 
-def create_model(num_hidden_layers=2):
-    model = Sequential()
-    model.add(Dense(number_of_nodes, input_dim=dim_2, activation='sigmoid'))
-    # model.add(Dropout(0.10))
-
-    if num_hidden_layers == 3:
-        model.add(Dense(100))
-        model.add(Activation('sigmoid'))
-
-    # model.add(Dropout(0.10))
-    model.add(Dense(Y_test.shape[1]))
-    model.add(Activation('linear'))
-
-    return model
-
-
 if __name__ == "__main__":
     input, output, time_series = create_mackey_glass_dataset([20, 15, 10, 5, 0])
 
-    # Utils.plot_glass_data(input)
+    # Utils.plot_glass_data(time_series)
 
     X_train = input[0:1000, :]
     X_test = input[1000:1200, :]
@@ -77,31 +69,57 @@ if __name__ == "__main__":
 
     dim_1 = X_train.shape[0]
     dim_2 = X_train.shape[1]
-    # X_train = np.reshape()
 
-    print(X_train.shape, Y_test.shape)
-
-    optimizer = Adam(lr=0.04)
-    monitor = 'mse'
-    earlystop = EarlyStopping(monitor="val_loss", patience=50, verbose=1, mode='auto')
-    callbacks = [earlystop]
-    batch_size = 500
-    validation_data = [X_test, Y_test]
-    epochs = 5000
+    learning_rate = 0.00001
+    opt = "SGD"
+    loss = 'mse'
+    activation = 'linear'
+    epochs = 500
     number_of_nodes = 10
-    num_hidden_layers = 2
+    n_layers = 2
+    validation_split = 0.1
 
-    model = create_model(num_hidden_layers=num_hidden_layers)
+    if opt == 'Adam':
+        optimizer = optimizers.Adam(lr=0.04)
+    if opt == 'SGD':
+        optimizer = optimizers.SGD(lr=0.01, clipvalue=0.5)
+    else:
+        optimizer = optimizers.Adam(lr=0.04)
 
-    model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=[monitor])
+    filepath = "weights.best.hdf5"
+
+    earlystop = EarlyStopping(monitor="val_loss", patience=5, verbose=1, mode='min')
+    # checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='max')
+
+    callbacks = [earlystop]
+    batch_size = 32
+
+    regul = "L2 (lr={0})".format(learning_rate)
+    regularizer = regularizers.l2(learning_rate)
+
+    model = Sequential()
+    model.add(Dense(number_of_nodes, input_dim=dim_2, activation=activation, kernel_regularizer=regularizer))
+    # model.add(Dropout(0.10))
+    if n_layers==2:
+        model.add(Dense(number_of_nodes, activation=activation,kernel_regularizer=regularizer))
+    # model.add(Dropout(0.10))
+    model.add(Dense(Y_test.shape[1]))
+    model.add(Activation('linear'))
+
+    model.compile(loss=loss, optimizer=optimizer)
 
     print("Training...")
-    model.fit(X_train, Y_train, epochs=epochs, validation_split=0.2, verbose=True, callbacks=callbacks,
+    model.fit(X_train, Y_train, epochs=epochs, validation_split=validation_split, verbose=True, callbacks=callbacks,
               batch_size=batch_size, shuffle=True)
 
     print("Generating test predictions...")
     preds = model.predict(X_test)
     eval = model.evaluate(X_test, Y_test)
+
     print(eval)
-    Utils.plot_glass_data(preds, Y_test, "Predictions vs Actual data")
-    # print(preds)
+    dictionary = {'Epochs': epochs, 'Validation split': validation_split, 'n_Layers': n_layers,
+                  'n_Nodes': number_of_nodes,
+                  'Regularizer': regul, 'Optimizer': opt, 'Metric': loss, 'Output loss': round(eval,4)}
+
+    Utils.plot_glass_data_prediction(preds, Y_test, "Predictions")
+    write_to_Csv(dictionary)
