@@ -255,7 +255,7 @@ def plot_nn_with_nodes(error, legend_names, num_epochs, title):
     plt.figure()
     plt.grid(True)
 
-    # plt.ylim(0, 0.04)
+    plt.ylim(0.01, 0.07)
     plt.xlim(0, len(num_epochs))
 
     # epochs = np.arange(0, num_epochs, 1)
@@ -271,6 +271,15 @@ def plot_nn_with_nodes(error, legend_names, num_epochs, title):
 
     plt.show()
 
+def plot_weights_distribution(regularazations, weights_layer_1):
+
+
+    for i in range(len(regularazations)):
+        plt.hist(weights_layer_1[i], 30)
+        plt.title('Weight distribution with lr = {0}'.format(str(regularazations[i])))
+        plt.xlim(-1.1, 1.1)
+        plt.show()
+        print(np.sum(weights_layer_1[i] ** 2))
 
 
 def plot_error_with_epochs(error, legend_names, num_epochs, title):

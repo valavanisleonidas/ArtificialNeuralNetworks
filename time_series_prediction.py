@@ -2,7 +2,7 @@ from __future__ import print_function
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation, GaussianNoise
 from keras import regularizers
 from keras import backend as K
 import keras.optimizers as optimizers
@@ -44,8 +44,8 @@ def mackey_glass_time_series(length, noise=0):
 
     for i in range(0, length - 1):
         x[i + 1] = x[i] + (beta * x[i - tau]) / (1 + x[i - tau] ** n) - gamma * x[i]
-        if noise>0:
-            x[i+1] += np.random.normal(0, noise, 1)
+        # if noise > 0:
+        #     x[i+1] += np.random.normal(0, noise, 1)
 
     return x
 
@@ -116,11 +116,13 @@ def run_noise_nodes_experiment():
 
 
     nodes = np.arange(1,8,1)
-    noises = [0, 0.03, 0.09, 0.18]
+    noises = [0.03, 0.09, 0.18]
     mse = []
+    mse_train= []
     for node in nodes:
         print("node : {0}".format(node))
         val_mse = []
+        train_mse = []
         for noise in noises:
 
             input, output, time_series = create_mackey_glass_dataset([20, 15, 10, 5, 0],noise)
@@ -128,9 +130,9 @@ def run_noise_nodes_experiment():
             # Utils.plot_glass_data(time_series)
             X_val, Y_val, X_train, Y_train, X_test, Y_test = get_data(input, output)
 
-            # X_train = add_noise_to_dataset(X_train, noise)
-
             dim_2 = X_train.shape[1]
+
+            X_train = add_noise_to_dataset(X_train, noise)
 
             if opt == 'Adam':
                 optimizer = optimizers.Adam(lr=0.04)
@@ -149,7 +151,9 @@ def run_noise_nodes_experiment():
             regularizer_first_layer = regularizers.l2(0.0001)
 
             model = Sequential()
+            # model.add(GaussianNoise(noise, input_shape=(dim_2,)))
             model.add(Dense(4, input_dim=dim_2, activation=activation, kernel_regularizer=regularizer_first_layer))
+
             # model.add(Dropout(0.10))
             if n_layers == 2:
                 model.add(Dense(node, activation=activation, kernel_regularizer=regularizer))
@@ -165,6 +169,7 @@ def run_noise_nodes_experiment():
                       batch_size=batch_size, shuffle=True)
 
             val_mse.append(error.mse_val[-1])
+            train_mse.append(error.mse_train[-1])
 
             print("Generating test predictions...")
             preds = model.predict(X_test)
@@ -173,11 +178,16 @@ def run_noise_nodes_experiment():
             print(eval)
 
         mse.append(val_mse)
+        mse_train.append(train_mse)
 
+    print(mse)
+    print(mse_train)
 
+    final_mse = np.hstack([mse, mse_train])
 
-    legend_names = ['val mse sigma 0','val mse sigma 0.03', 'val mse sigma 0.09', 'val mse sigma 0.18']
-    Utils.plot_nn_with_nodes(np.array(mse).T, legend_names, nodes,
+    legend_names = ['val mse sigma 0.03', 'val mse sigma 0.09', 'val mse sigma 0.18',
+                    'train mse sigma 0.03', 'train mse sigma 0.09', 'train mse sigma 0.18']
+    Utils.plot_nn_with_nodes(np.array(final_mse).T, legend_names, nodes,
                                  'Three layers network with lr = {0}, batch = 32'.format(learning_rate))
 
 
@@ -187,6 +197,8 @@ def run_exp():
 
     # Utils.plot_glass_data(time_series)
     X_val, Y_val, X_train, Y_train, X_test, Y_test = get_data(input, output)
+
+    # X_train = add_noise_to_dataset(X_train, noise=0.09)
 
     dim_2 = X_train.shape[1]
 
@@ -198,7 +210,8 @@ def run_exp():
     loss = 'mse'
     activation = 'linear'
     epochs = 500
-    number_of_nodes = 4
+    number_of_nodes_layer_1 = 4
+    number_of_nodes_layer_2 = 2
     n_layers = 1
     validation_split = 0.35
 
@@ -219,10 +232,10 @@ def run_exp():
     regularizer = regularizers.l2(learning_rate)
 
     model = Sequential()
-    model.add(Dense(number_of_nodes, input_dim=dim_2, activation=activation, kernel_regularizer=regularizer))
+    model.add(Dense(number_of_nodes_layer_1, input_dim=dim_2, activation=activation, kernel_regularizer=regularizer))
     # model.add(Dropout(0.10))
     if n_layers == 2:
-        model.add(Dense(number_of_nodes, activation=activation, kernel_regularizer=regularizer))
+        model.add(Dense(number_of_nodes_layer_2, activation=activation, kernel_regularizer=regularizer))
     # model.add(Dropout(0.10))
     model.add(Dense(Y_test.shape[1]))
     model.add(Activation('linear'))
@@ -237,17 +250,26 @@ def run_exp():
     preds = model.predict(X_test)
     eval = model.evaluate(X_test, Y_test)
 
-    print(eval)
+    print('test',eval)
+    print('train')
+    eval_trian = model.evaluate(X_train, Y_train)
+    print('train',eval_trian)
+
+    print('val')
+    eval_val = model.evaluate(X_val, Y_val)
+    print('val', eval_val)
+
     dictionary = {'Epochs': epochs, 'Val split': validation_split, 'n Layers': n_layers,
-                  'n Nodes': number_of_nodes, 'Batch Size': batch_size,
-                  'Regularizer': regul, 'Optimizer': opt, 'Metric': loss, 'Pred loss': round(eval, 4)}
+                  'n Nodes _layer 1': number_of_nodes_layer_1, 'n Nodes _layer 2': number_of_nodes_layer_2,
+                  'Batch Size': batch_size, 'Regularizer': regul,
+                  'Optimizer': opt, 'Metric': loss, 'Pred loss': round(eval, 4)}
 
     mse = [error.mse_train, error.mse_val, error.mse_test]
 
     legend_names = ['train', 'validation', 'test']
     Utils.plot_error_with_epochs(mse, legend_names, epochs, 'Two layers network with 8 nodes ,lr = 0.0001, batch = 32')
 
-    Utils.plot_glass_data_prediction(preds, Y_test, "Predictions")
+    # Utils.plot_glass_data_prediction(preds, Y_test, "Predictions")
 
     write_to_Csv(dictionary)
 
@@ -308,19 +330,9 @@ def run_weights_distribution():
         first_layer_weights = model.layers[0].get_weights()[0]
         weights.append(first_layer_weights)
 
-    plot_weights_distribution(rates,weights)
+    Utils.plot_weights_distribution(rates,weights)
 
 
-def plot_weights_distribution(regularazations,weights_layer_1):
-
-    import matplotlib.pyplot as plt
-
-    for i in range(len(regularazations)):
-        plt.hist(weights_layer_1[i], 30)
-        plt.title('Weight distribution with lr = {0}'.format(str(regularazations[i])))
-        plt.xlim(-1.1, 1.1)
-        plt.show()
-        print(np.sum(weights_layer_1[i] ** 2))
 
 
 if __name__ == "__main__":
