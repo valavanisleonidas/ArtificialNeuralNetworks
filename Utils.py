@@ -298,6 +298,7 @@ def plot_error_with_epochs(error, legend_names, num_epochs, title):
     plt.xlabel('Epochs')
     plt.ylabel('Error (mse)')
 
+    plt.legend(legend_names, loc='upper right')
     plt.title(title)
     plt.show()
 
